@@ -1,0 +1,26 @@
+{
+  "name": "@roomwave/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:generate": "prisma generate --config prisma7.config.ts",
+    "db:status": "prisma migrate status --config prisma7.config.ts",
+    "db:studio": "prisma studio --config prisma7.config.ts",
+    "test:db": "tsx src/test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "dotenv": "^18.0.0",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1",
+    "prisma": "^7.10.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

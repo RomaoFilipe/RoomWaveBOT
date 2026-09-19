@@ -1,0 +1,184 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RoomStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum RoomRole {
+  OWNER
+  ADMIN
+  MODERATOR
+  DJ
+  VIP
+  USER
+}
+
+enum DjStatus {
+  OFFLINE
+  REQUESTED
+  LIVE
+}
+
+enum RequestStatus {
+  PENDING
+  QUEUED
+  PLAYED
+  REJECTED
+  CANCELLED
+}
+
+enum QueueStatus {
+  WAITING
+  PLAYING
+  PLAYED
+  SKIPPED
+  REMOVED
+}
+
+model User {
+  id         String  @id @default(uuid())
+  imvuUserId String? @unique
+  username   String
+
+  memberships   RoomMember[]
+  djAssignments DjAssignment[]
+  requests      MusicRequest[]
+  queueItems    QueueItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([username])
+}
+
+model Room {
+  id             String     @id @default(uuid())
+  name           String
+  imvuRoomId     String?    @unique
+  azuraStationId Int?
+  streamUrl      String?
+  status         RoomStatus @default(ACTIVE)
+
+  members       RoomMember[]
+  djs           DjAssignment[]
+  requests      MusicRequest[]
+  queueItems    QueueItem[]
+  playbackItems PlaybackHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RoomMember {
+  id     String   @id @default(uuid())
+  roomId String
+  userId String
+  role   RoomRole @default(USER)
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([roomId, userId])
+  @@index([userId])
+}
+
+model DjAssignment {
+  id               String   @id @default(uuid())
+  roomId           String
+  userId           String
+  streamerUsername String
+  status           DjStatus @default(OFFLINE)
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([roomId, userId])
+  @@unique([roomId, streamerUsername])
+}
+
+model Track {
+  id          String  @id @default(uuid())
+  provider    String
+  externalId  String?
+  title       String
+  artist      String
+  durationSec Int?
+  artworkUrl  String?
+  sourceUrl   String?
+
+  requests      MusicRequest[]
+  queueItems    QueueItem[]
+  playbackItems PlaybackHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, externalId])
+  @@index([title])
+  @@index([artist])
+}
+
+model MusicRequest {
+  id            String        @id @default(uuid())
+  roomId        String
+  requestedById String
+  trackId       String
+  query         String
+  status        RequestStatus @default(PENDING)
+
+  room        Room  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  requestedBy User  @relation(fields: [requestedById], references: [id], onDelete: Cascade)
+  track       Track @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roomId, status])
+  @@index([requestedById])
+}
+
+model QueueItem {
+  id            String      @id @default(uuid())
+  roomId        String
+  trackId       String
+  requestedById String?
+  position      Int
+  status        QueueStatus @default(WAITING)
+
+  room        Room  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  track       Track @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  requestedBy User? @relation(fields: [requestedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now())
+  playedAt  DateTime?
+
+  @@index([roomId, status, position])
+}
+
+model PlaybackHistory {
+  id      String @id @default(uuid())
+  roomId  String
+  trackId String
+
+  room  Room  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  track Track @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  @@index([roomId, startedAt])
+}

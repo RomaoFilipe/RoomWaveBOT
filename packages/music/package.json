@@ -1,0 +1,22 @@
+{
+  "name": "@roomwave/music",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test:search": "tsx src/test.ts"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.0",
+    "he": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/he": "^1.2.3",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
+}
