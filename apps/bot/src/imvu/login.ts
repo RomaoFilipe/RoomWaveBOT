@@ -21,7 +21,7 @@ async function dismissCookies(page: Page) {
 
       try {
         if (await button.isVisible()) {
-          await button.click();
+          await button.click({ timeout: 2000 });
           await page.waitForTimeout(1000);
           return;
         }
