@@ -2,6 +2,15 @@
 
 Domínio: `roomwavebot.duckdns.org`.
 
+Ativado em 20/09/2026 com certificado HTTPS válido:
+
+- Rádio: https://roomwavebot.duckdns.org/roomwave.mp3
+- Dashboard: https://roomwavebot.duckdns.org/dashboard/
+
+O login mantém as mesmas credenciais. Usar o novo endereço do dashboard,
+pois a validação de origem das ações foi atualizada. Configuração Caddy de
+referência: `deploy/roomwave.Caddyfile`.
+
 O updater consulta o IPv4 público através de IMDSv2 da EC2 e atualiza o DuckDNS
 por HTTPS. O timer executa no arranque e a cada cinco minutos. O token fica
 em `.data/duckdns/token` (600), fora do Git, e nunca é escrito nos logs.

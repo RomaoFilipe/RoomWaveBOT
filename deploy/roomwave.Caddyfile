@@ -1,0 +1,41 @@
+13-220-164-169.sslip.io, roomwavebot.duckdns.org {
+    @dashboard path /dashboard /dashboard/*
+    handle @dashboard {
+        reverse_proxy 127.0.0.1:3240
+    }
+
+
+    # ROOMWAVE_SPOTIFY_OAUTH
+    handle /spotify/login {
+        uri strip_prefix /spotify
+        reverse_proxy 127.0.0.1:3220
+    }
+
+    handle /spotify/callback {
+        uri strip_prefix /spotify
+        reverse_proxy 127.0.0.1:3220
+    }
+
+
+	handle /roomwave.mp3 {
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	handle /ytplayer {
+		root * /var/www/roomwave
+		rewrite * /ytplayer.html
+		file_server
+	}
+
+	handle /player-state.json {
+		root * /var/www/roomwave
+
+		header Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+
+		file_server
+	}
+
+	handle {
+		respond "RoomWave" 200
+	}
+}
