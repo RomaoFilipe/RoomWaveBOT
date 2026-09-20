@@ -1,5 +1,6 @@
 import {
   addTrack,
+  RoomWaveApiError,
 } from "../services/api.js";
 
 export async function addCommand(
@@ -12,11 +13,15 @@ export async function addCommand(
     );
   }
 
-  const result =
-    await addTrack(
-      args.trim(),
-      imvuUserId,
-    );
+  let result;
+  try {
+    result = await addTrack(args.trim(), imvuUserId);
+  } catch (error) {
+    if (error instanceof RoomWaveApiError && error.code === "TRACK_NOT_FOUND") {
+      return "❌ Não consegui encontrar esta música no YouTube. O vídeo pode estar indisponível. Tenta outro link ou !add artista - título.";
+    }
+    throw error;
+  }
 
   const duration =
     result.track.durationSec

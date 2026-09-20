@@ -31,12 +31,16 @@ async function readJson(
     }));
 }
 
-function apiError(
-  body: unknown,
-) {
-  return new Error(
-    `RoomWave API error: ${JSON.stringify(body)}`,
-  );
+export class RoomWaveApiError extends Error {
+  constructor(public readonly code: string, body: unknown) {
+    super(`RoomWave API error: ${JSON.stringify(body)}`);
+  }
+}
+
+function apiError(body: unknown) {
+  const code = body && typeof body === "object" && "error" in body && typeof body.error === "string"
+    ? body.error : "UNKNOWN_API_ERROR";
+  return new RoomWaveApiError(code, body);
 }
 
 export async function ensureImvuMember(
