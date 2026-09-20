@@ -9,6 +9,9 @@ export function helpCommand(): string {
     "!skip - saltar música (DJ+)",
     "!remove <posição> - remover (MOD+)",
     "!clear - limpar fila (ADMIN+)",
-    "!help - mostrar comandos",
+    "!regras - regras da sala",
+    "!radio - link da rádio",
+    "!staff - equipa da sala",
+    "!comandos / !help - mostrar comandos",
   ].join("\n");
 }

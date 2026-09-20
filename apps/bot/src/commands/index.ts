@@ -1,3 +1,4 @@
+import { rulesCommand, radioCommand, staffCommand } from "./room-info.js";
 import { volumeCommand } from "./volume.js";
 import {
   addCommand,
@@ -96,6 +97,16 @@ export async function handleCommand(
         context.imvuUserId,
       );
 
+    case "regras":
+      return rulesCommand();
+
+    case "radio":
+      return radioCommand();
+
+    case "staff":
+      return staffCommand();
+
+    case "comandos":
     case "help":
       return helpCommand();
 

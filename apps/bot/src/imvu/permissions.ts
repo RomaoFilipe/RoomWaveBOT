@@ -21,6 +21,10 @@ export function canRunCommand(
     new Set([
       "!ping",
       "!help",
+      "!comandos",
+      "!regras",
+      "!radio",
+      "!staff",
       "!add",
       "!queue",
       "!now",

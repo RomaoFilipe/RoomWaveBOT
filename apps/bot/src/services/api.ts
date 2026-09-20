@@ -382,3 +382,15 @@ export async function radioVolume(imvuUserId: string, volume?: number) {
   if (!response.ok) throw apiError(body);
   return body as { volume: number };
 }
+
+export async function getRoomStaff(): Promise<Array<{ role: string; user: { username: string } }>> {
+  const { roomId } = requireRoom();
+  const response = await fetch(`${getApiUrl()}/api/rooms/${encodeURIComponent(roomId)}`, {
+    signal: AbortSignal.timeout(5000),
+  });
+  const body = await readJson(response);
+  if (!response.ok || !Array.isArray(body.room?.members)) throw apiError(body);
+  return body.room.members
+    .filter((member: { role: string }) => ["OWNER", "ADMIN", "MODERATOR", "DJ"].includes(member.role))
+    .map((member: { role: string; user: { username: string } }) => ({ role: member.role, user: { username: member.user.username } }));
+}
