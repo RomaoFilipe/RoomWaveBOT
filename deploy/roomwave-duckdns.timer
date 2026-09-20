@@ -1,0 +1,12 @@
+[Unit]
+Description=Refresh RoomWave DNS on boot and every five minutes
+
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=5min
+OnCalendar=*:0/5
+Persistent=true
+Unit=roomwave-duckdns.service
+
+[Install]
+WantedBy=timers.target

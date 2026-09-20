@@ -1,0 +1,16 @@
+[Unit]
+Description=Update RoomWave DuckDNS with EC2 public IP
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=/home/ubuntu/roomwave/.data/duckdns/token
+
+[Service]
+Type=oneshot
+User=ubuntu
+ExecStart=/usr/bin/python3 /home/ubuntu/roomwave/tools/duckdns-update.py
+TimeoutStartSec=60
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+UMask=0077
