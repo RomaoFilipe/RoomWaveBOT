@@ -1,7 +1,4 @@
 import he from "he";
-import {
-  searchEmbeddableYouTubeTrack,
-} from "./youtube-embed.js";
 import { searchYTMusic } from "./ytmusic.js";
 
 interface YouTubeSearchResponse {
@@ -327,34 +324,9 @@ function scoreCandidate(
   return score;
 }
 
-export async function searchYouTubeTrack(
+async function searchYouTubeTrackByQuery(
   query: string,
 ) {
-
-  /*
-   * Para o Browser Player:
-   * escolher primeiro vídeos que o
-   * YouTube permite incorporar e
-   * reproduzir fora de youtube.com.
-   */
-  try {
-    const playable =
-      await searchEmbeddableYouTubeTrack(
-        query,
-      );
-
-    if (playable) {
-      return playable;
-    }
-  } catch (error) {
-    console.warn(
-      "[YouTube Embed] fallback:",
-      error instanceof Error
-        ? error.message
-        : error,
-    );
-  }
-
 
   /*
    * =========================================================
@@ -475,11 +447,6 @@ export async function searchYouTubeTrack(
   );
 
   searchUrl.searchParams.set(
-    "videoEmbeddable",
-    "true",
-  );
-
-  searchUrl.searchParams.set(
     "q",
     query,
   );
@@ -490,7 +457,7 @@ export async function searchYouTubeTrack(
   );
 
   const searchResponse =
-    await fetch(searchUrl);
+    await fetch(searchUrl, { signal: AbortSignal.timeout(15000) });
 
   if (!searchResponse.ok) {
     throw new Error(
@@ -543,7 +510,7 @@ export async function searchYouTubeTrack(
   );
 
   const videoResponse =
-    await fetch(videoUrl);
+    await fetch(videoUrl, { signal: AbortSignal.timeout(15000) });
 
   if (!videoResponse.ok) {
     throw new Error(
@@ -714,4 +681,299 @@ export async function searchYouTubeTrack(
     sourceUrl:
       selected.sourceUrl,
   };
+}
+
+
+/*
+ * ============================================================
+ * YOUTUBE DIRECT VIDEO
+ * ============================================================
+ *
+ * URL ou videoId explícito nunca deve ser reinterpretado
+ * como texto de pesquisa.
+ */
+
+function extractDirectYouTubeVideoId(
+  input: string,
+): string | null {
+
+  const value =
+    input.trim();
+
+  /*
+   * ID puro.
+   */
+  if (
+    /^[A-Za-z0-9_-]{11}$/.test(
+      value,
+    )
+  ) {
+    return value;
+  }
+
+  /*
+   * Também funciona quando o IMVU nos entregar
+   * acidentalmente sintaxe Markdown:
+   *
+   * [https://youtube...](https://youtube...)
+   */
+  const patterns = [
+    /(?:https?:\/\/)?(?:www\.)?youtu\.be\/([A-Za-z0-9_-]{11})(?:[?&#/\s)]|$)/i,
+
+    /(?:https?:\/\/)?(?:(?:www|m|music)\.)?youtube\.com\/watch\?[^\s#)]*\bv=([A-Za-z0-9_-]{11})(?:[&#\s)]|$)/i,
+
+    /(?:https?:\/\/)?(?:(?:www|m)\.)?youtube\.com\/(?:embed|shorts|live)\/([A-Za-z0-9_-]{11})(?:[?&#/\s)]|$)/i,
+  ];
+
+  for (
+    const pattern of patterns
+  ) {
+    const match =
+      value.match(pattern);
+
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+
+  return null;
+}
+
+
+async function resolveDirectYouTubeVideo(
+  videoId: string,
+) {
+
+  const apiKey =
+    process.env
+      .YOUTUBE_API_KEY
+      ?.trim();
+
+  if (!apiKey) {
+    throw new Error(
+      "YOUTUBE_API_KEY não está configurada.",
+    );
+  }
+
+  const url =
+    new URL(
+      "https://www.googleapis.com/youtube/v3/videos",
+    );
+
+  url.searchParams.set(
+    "part",
+    "snippet,contentDetails,status",
+  );
+
+  url.searchParams.set(
+    "id",
+    videoId,
+  );
+
+  url.searchParams.set(
+    "key",
+    apiKey,
+  );
+
+  const response =
+    await fetch(
+      url,
+      {
+        signal: AbortSignal.timeout(15000),
+        headers: {
+          accept:
+            "application/json",
+        },
+      },
+    );
+
+  if (!response.ok) {
+
+    throw new Error(
+      `YouTube Data API respondeu HTTP ${response.status}`,
+    );
+  }
+
+  const data =
+    await response.json() as {
+      items?: Array<{
+        id?: string;
+
+        snippet?: {
+          title?: string;
+          channelTitle?: string;
+
+          thumbnails?: {
+            high?: {
+              url?: string;
+            };
+
+            medium?: {
+              url?: string;
+            };
+
+            default?: {
+              url?: string;
+            };
+          };
+        };
+
+        contentDetails?: {
+          duration?: string;
+        };
+
+        status?: {
+          embeddable?: boolean;
+          privacyStatus?: string;
+        };
+      }>;
+    };
+
+  const item =
+    data.items?.[0];
+
+  if (!item) {
+    throw new Error(
+      "Vídeo YouTube não encontrado.",
+    );
+  }
+
+  const rawTitle =
+    item.snippet?.title ??
+    "";
+
+  const channelTitle =
+    item.snippet
+      ?.channelTitle ??
+    "";
+
+  const durationSec =
+    parseIsoDuration(
+      item.contentDetails
+        ?.duration,
+    );
+
+  if (
+    !rawTitle ||
+    durationSec === null
+  ) {
+    throw new Error(
+      "Não foi possível obter os metadados do vídeo.",
+    );
+  }
+
+  /*
+   * Vídeos pedidos diretamente:
+   * mínimo 45 segundos,
+   * máximo 4 horas.
+   */
+  const MIN_DIRECT_DURATION =
+    45;
+
+  const MAX_DIRECT_DURATION =
+    4 * 60 * 60;
+
+  if (
+    durationSec <
+      MIN_DIRECT_DURATION
+  ) {
+    throw new Error(
+      "O vídeo é demasiado curto.",
+    );
+  }
+
+  if (
+    durationSec >
+      MAX_DIRECT_DURATION
+  ) {
+    throw new Error(
+      "O vídeo ultrapassa o limite de 4 horas.",
+    );
+  }
+
+  const metadata =
+    deriveArtistAndTitle(
+      rawTitle,
+      channelTitle,
+    );
+
+  const artworkUrl =
+    item.snippet
+      ?.thumbnails
+      ?.high
+      ?.url ??
+    item.snippet
+      ?.thumbnails
+      ?.medium
+      ?.url ??
+    item.snippet
+      ?.thumbnails
+      ?.default
+      ?.url ??
+    null;
+
+  console.log(
+    `[YouTube Direct] videoId=${videoId} duration=${durationSec}s title="${rawTitle}"`,
+  );
+
+  return {
+    provider:
+      "youtube" as const,
+
+    externalId:
+      videoId,
+
+    title:
+      metadata.title,
+
+    artist:
+      metadata.artist,
+
+    durationSec,
+
+    artworkUrl,
+
+    sourceUrl:
+      `https://www.youtube.com/watch?v=${videoId}`,
+  };
+}
+
+
+/*
+ * ============================================================
+ * PUBLIC RESOLVER
+ * ============================================================
+ */
+
+export async function searchYouTubeTrack(
+  query: string,
+) {
+
+  const directVideoId =
+    extractDirectYouTubeVideoId(
+      query,
+    );
+
+  /*
+   * URL ou ID explícito:
+   * nunca fazemos pesquisa.
+   */
+  if (directVideoId) {
+
+    console.log(
+      `[YouTube Direct] pedido explícito → ${directVideoId}`,
+    );
+
+    return resolveDirectYouTubeVideo(
+      directVideoId,
+    );
+  }
+
+  /*
+   * Texto normal continua a utilizar exatamente
+   * o resolver/pesquisa que já existia.
+   */
+  return searchYouTubeTrackByQuery(
+    query,
+  );
 }

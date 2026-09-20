@@ -8,7 +8,8 @@
     "build": "pnpm -r build",
     "start": "pnpm -r start",
     "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "youtube:probe": "node --import tsx tools/probe-youtube.mts"
   },
   "engines": {
     "node": ">=24"

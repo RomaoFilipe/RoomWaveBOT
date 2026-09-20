@@ -1,3 +1,7 @@
+import {
+  resolvePlayableUri,
+} from "./source-resolver.js";
+
 import { config } from "dotenv";
 import { fileURLToPath } from "node:url";
 
@@ -22,25 +26,18 @@ const {
 );
 
 const {
-  radioPush,
-  radioSkip,
+  audioEnginePlay,
+  audioEngineStop,
+  audioEngineStatus,
 } = await import(
-  "./liquidsoap.js"
+  "./audio-engine.js"
 );
 
 const {
-  resolveRadioSource,
+  cleanupEphemeralSource,
 } = await import(
-  "./radio-source.js"
+  "./ephemeral-cleanup.js"
 );
-
-const {
-  startAudioGateway,
-} = await import(
-  "./audio-gateway.js"
-);
-
-await startAudioGateway();
 
 
 const roomId = (() => {
@@ -88,6 +85,9 @@ type ActiveTrack = {
   requestedById:
     string | null;
 
+  source?:
+    string | null;
+
   startedAt: Date;
 };
 
@@ -107,36 +107,10 @@ let idleLogged =
  * ============================================================
  */
 
-function getYoutubeVideoId(
-  track: {
-    provider: string;
-    externalId: string | null;
-  },
-): string | null {
-
-  if (
-    track.provider.toLowerCase()
-      !== "youtube" ||
-    !track.externalId
-  ) {
-    return null;
-  }
-
-  const id =
-    track.externalId.trim();
-
-  if (
-    !/^[A-Za-z0-9_-]{11}$/.test(id)
-  ) {
-    return null;
-  }
-
-  return id;
-}
-
 function getPlayableUri(track: {
   provider: string;
   sourceUrl: string | null;
+  externalId: string | null;
 }): string | null {
   const provider =
     track.provider.toLowerCase();
@@ -144,19 +118,16 @@ function getPlayableUri(track: {
   const sourceUrl =
     track.sourceUrl;
 
-  if (!sourceUrl) {
-    return null;
-  }
-
-  /*
-   * YouTube continua a ser pesquisa/metadados.
-   * Não enviamos páginas do YouTube para o Liquidsoap.
-   */
+  // The Audio Engine resolves the video immediately before playback.
   if (
     provider === "youtube"
   ) {
-    return null;
+    return track.externalId && /^[A-Za-z0-9_-]{11}$/.test(track.externalId)
+      ? `https://www.youtube.com/watch?v=${track.externalId}`
+      : null;
   }
+
+  if (!sourceUrl) return null;
 
   if (
     provider === "local" &&
@@ -166,7 +137,7 @@ function getPlayableUri(track: {
   }
 
   if (
-    ["direct", "stream", "licensed"].includes(
+    ["direct", "stream", "licensed", "audius"].includes(
       provider,
     ) &&
     /^https?:\/\//i.test(
@@ -177,6 +148,77 @@ function getPlayableUri(track: {
   }
 
   return null;
+}
+
+
+async function resolveTrackSource(
+  track: {
+    provider: string;
+    sourceUrl: string | null;
+    externalId: string | null;
+    artist: string;
+    title: string;
+    durationSec: number | null;
+  },
+): Promise<string | null> {
+
+  const provider =
+    track.provider.toLowerCase();
+
+  /*
+   * YouTube / YouTube Music:
+   * nunca enviar o watch URL diretamente
+   * ao Audio Engine.
+   *
+   * Primeiro perguntar ao Source Resolver.
+   */
+  if (
+    provider === "youtube"
+  ) {
+    console.log(
+      `🔎 Source Resolver: ${track.artist} - ${track.title}`,
+    );
+
+    const resolved =
+      await resolvePlayableUri({
+        provider:
+          track.provider,
+
+        externalId:
+          track.externalId,
+
+        artist:
+          track.artist,
+
+        title:
+          track.title,
+
+        durationSec:
+          track.durationSec,
+      });
+
+    if (resolved) {
+      console.log(
+        `✅ Fonte resolvida: ${track.artist} - ${track.title}`,
+      );
+
+      return resolved;
+    }
+
+    console.log(
+      `⚠️ Source Resolver: UNAVAILABLE — ${track.artist} - ${track.title}`,
+    );
+
+    return null;
+  }
+
+  /*
+   * Local / HTTP / Audius / fontes diretas
+   * continuam a utilizar a lógica existente.
+   */
+  return getPlayableUri(
+    track,
+  );
 }
 
 
@@ -399,6 +441,29 @@ async function recoverPlaying():
         });
   }
 
+  const playback = await audioEngineStatus();
+  const expectedTitle = `${item.track.artist} - ${item.track.title}`;
+  const engineHasTrack = playback.current?.title === expectedTitle;
+  // Reuse the engine's existing file: resolving again creates a different path
+  // and prevents monitoring from associating engine errors with this queue item.
+  let source = engineHasTrack ? playback.current!.source : null;
+  let startedAt = playback.startedAt ? new Date(playback.startedAt) : history.startedAt;
+  if (!engineHasTrack) {
+    if (playback.current && ["LOADING", "PLAYING", "PAUSED"].includes(playback.state ?? "")) {
+      throw new Error("RECOVERY_ENGINE_TRACK_MISMATCH");
+    }
+    source = await resolveTrackSource(item.track);
+    if (!source) throw new Error("RECOVERY_SOURCE_UNAVAILABLE");
+    try {
+      const resumed = await audioEnginePlay(source, expectedTitle);
+      startedAt = resumed.startedAt ? new Date(resumed.startedAt) : new Date();
+    } catch (error) {
+      await audioEngineStop().catch(() => {});
+      await cleanupEphemeralSource(source);
+      throw error;
+    }
+  }
+
   active = {
     queueItemId:
       item.id,
@@ -420,8 +485,8 @@ async function recoverPlaying():
     requestedById:
       item.requestedById,
 
-    startedAt:
-      history.startedAt,
+    source,
+    startedAt,
   };
 
   idleLogged = false;
@@ -525,68 +590,44 @@ async function startNextInternal():
 
   /*
    * ============================================================
-   * PRE-FLIGHT DA FONTE
+   * PRE-FLIGHT AUDIO ENGINE
    * ============================================================
-   *
-   * Só marcamos a faixa como PLAYING depois de confirmar
-   * que existe uma fonte de áudio utilizável.
    */
 
-  const preparedSource =
-    await resolveRadioSource({
-      provider:
-        next.track.provider,
-
-      externalId:
-        next.track.externalId,
-
-      title:
-        next.track.title,
-
-      artist:
-        next.track.artist,
-
-      durationSec:
-        next.track.durationSec,
-
-      sourceUrl:
-        next.track.sourceUrl,
-    });
-
-
-  if (!preparedSource) {
-
-    console.log(
-      `⛔ Fonte indisponível: ${next.track.artist} - ${next.track.title}`,
+  const playableUri =
+    await resolveTrackSource(
+      next.track,
     );
 
-    /*
-     * Continua WAITING até este momento.
-     * Portanto nunca existiu falso PLAYING
-     * nem PlaybackHistory para esta tentativa.
-     */
+  if (!playableUri) {
+
+    console.log(
+      `⛔ Fonte não reproduzível pelo Audio Engine: ${next.track.artist} - ${next.track.title}`,
+    );
+
     const skipped =
-      await prisma.queueItem.updateMany({
-        where: {
-          id:
-            next.id,
+      await prisma.queueItem
+        .updateMany({
+          where: {
+            id:
+              next.id,
 
-          status:
-            "WAITING",
-        },
+            status:
+              "WAITING",
+          },
 
-        data: {
-          status:
-            "SKIPPED",
+          data: {
+            status:
+              "SKIPPED",
 
-          playedAt:
-            new Date(),
-        },
-      });
-
+            playedAt:
+              new Date(),
+          },
+        });
 
     if (
-      skipped.count === 1
+      skipped.count ===
+      1
     ) {
 
       await rejectQueuedRequest(
@@ -594,15 +635,12 @@ async function startNextInternal():
         next.requestedById,
       );
 
-
       console.log(
         "⏭️ QueueItem → SKIPPED",
       );
 
-
       await renumberQueue();
     }
-
 
     return true;
   }
@@ -683,6 +721,9 @@ async function startNextInternal():
     requestedById:
       next.requestedById,
 
+    source:
+      playableUri,
+
     startedAt:
       claimed.startedAt,
   };
@@ -690,28 +731,61 @@ async function startNextInternal():
   idleLogged = false;
 
   /*
-   * A fonte já foi validada antes do claim.
-   * Aqui apenas a entregamos ao Liquidsoap.
+   * O AutoDJ entrega a fonte diretamente
+   * ao RoomWave Audio Engine.
+   *
+   * Audio Engine -> FFmpeg -> Harbor ->
+   * Liquidsoap -> Icecast.
    */
   try {
 
-    await radioPush(
-      preparedSource.url,
-    );
+    const playback =
+      await audioEnginePlay(
+        playableUri,
+        `${next.track.artist} - ${next.track.title}`,
+      );
+
+    if (
+      playback.ok !== true ||
+      playback.state !==
+        "PLAYING"
+    ) {
+
+      throw new Error(
+        `Audio Engine recusou a faixa: state=${playback.state ?? "?"} error=${playback.lastError ?? "?"}`,
+      );
+    }
 
     console.log(
-      `🔊 RADIO ON: ${preparedSource.artist} - ${preparedSource.title}`,
+      `🔊 AUDIO ENGINE ON: ${next.track.artist} - ${next.track.title}`,
     );
+
+    if (playback.startedAt) {
+      active.startedAt = new Date(playback.startedAt);
+      await prisma.playbackHistory.update({
+        where: { id: claimed.id },
+        data: { startedAt: active.startedAt },
+      });
+    }
 
   } catch (error) {
 
     console.error(
-      "❌ Liquidsoap recusou a fonte:",
+      "❌ Audio Engine recusou a faixa:",
       error instanceof Error
         ? error.message
         : error,
     );
 
+    try {
+
+      await audioEngineStop();
+
+    } catch {}
+
+    await cleanupEphemeralSource(
+      playableUri,
+    );
 
     await prisma.queueItem.update({
       where: {
@@ -728,24 +802,19 @@ async function startNextInternal():
       },
     });
 
-
     await closePlaybackHistory(
       next.trackId,
     );
-
 
     await rejectQueuedRequest(
       next.trackId,
       next.requestedById,
     );
 
-
     active =
       null;
 
-
     await renumberQueue();
-
 
     return true;
   }
@@ -909,6 +978,7 @@ async function finishActive() {
 
         return true;
       },
+      { maxWait: 10_000, timeout: 20_000 },
     );
 
   if (!completed) {
@@ -918,6 +988,10 @@ async function finishActive() {
 
   console.log(
     `✅ PLAYED: ${current.artist} - ${current.title}`,
+  );
+
+  await cleanupEphemeralSource(
+    current.source,
   );
 
   active = null;
@@ -934,6 +1008,17 @@ async function monitorActive() {
   if (!active) {
     return;
   }
+
+  /*
+   * Snapshot local.
+   *
+   * `active` é uma variável global e pode teoricamente
+   * mudar durante os vários await desta função.
+   * `current` mantém a referência à faixa que estamos
+   * efetivamente a monitorizar nesta iteração.
+   */
+  const current = active;
+
 
   const item =
     await prisma.queueItem
@@ -959,22 +1044,26 @@ async function monitorActive() {
       "PLAYING"
   ) {
     const previous =
-      active;
+      current;
 
     console.log(
       `⏭️ Playback interrompido: ${previous.artist} - ${previous.title}`,
     );
 
     try {
-      await radioSkip();
+      await audioEngineStop();
     } catch (error) {
       console.error(
-        "⚠️ Não foi possível executar SKIP no Liquidsoap:",
+        "⚠️ Não foi possível parar o Audio Engine:",
         error instanceof Error
           ? error.message
           : error,
       );
     }
+
+    await cleanupEphemeralSource(
+      previous.source,
+    );
 
     await closePlaybackHistory(
       previous.trackId,
@@ -987,20 +1076,155 @@ async function monitorActive() {
     return;
   }
 
-  const elapsedSec =
-    (
-      Date.now() -
-      active.startedAt
-        .getTime()
-    ) /
-    1000;
+  /*
+   * ============================================================
+   * ESTADO REAL DO AUDIO ENGINE
+   * ============================================================
+   *
+   * O estado do processo FFmpeg é agora
+   * a principal indicação de reprodução.
+   */
+  try {
 
-  if (
-    elapsedSec >=
-    active.durationSec
-  ) {
-    await finishActive();
+    const playback =
+      await audioEngineStatus();
+
+    const sameSource =
+      !current.source ||
+      playback.current?.source ===
+        current.source;
+
+    /*
+     * Quando o FFmpeg termina naturalmente,
+     * o Audio Engine regressa a IDLE.
+     */
+    if (
+      current.source &&
+      playback.state ===
+        "IDLE" &&
+      playback.current ===
+        null
+    ) {
+
+      console.log(
+        `🏁 Audio Engine terminou: ${current.artist} - ${current.title}`,
+      );
+
+      await finishActive();
+
+      return;
+    }
+
+    /*
+     * Falha real do FFmpeg/resolver.
+     */
+    if (
+      sameSource &&
+      playback.state ===
+        "ERROR"
+    ) {
+
+      const failed =
+        active;
+
+      if (!failed) {
+        return;
+      }
+
+      console.log(
+        `⛔ Audio Engine ERROR: ${failed.artist} - ${failed.title}`,
+      );
+
+      if (
+        playback.lastError
+      ) {
+
+        console.log(
+          `   ${playback.lastError}`,
+        );
+      }
+
+      try {
+
+        await audioEngineStop();
+
+      } catch {}
+
+      await cleanupEphemeralSource(
+        failed.source,
+      );
+
+      const skipped =
+        await prisma.queueItem
+          .updateMany({
+            where: {
+              id:
+                failed.queueItemId,
+
+              status:
+                "PLAYING",
+            },
+
+            data: {
+              status:
+                "SKIPPED",
+
+              playedAt:
+                new Date(),
+            },
+          });
+
+      if (
+        skipped.count ===
+        1
+      ) {
+
+        await closePlaybackHistory(
+          failed.trackId,
+        );
+
+        await rejectQueuedRequest(
+          failed.trackId,
+          failed.requestedById,
+        );
+
+        active =
+          null;
+
+        await renumberQueue();
+
+        console.log(
+          "⏭️ Faixa rejeitada pelo Audio Engine.",
+        );
+      }
+
+      return;
+    }
+
+    // The engine is authoritative. Metadata duration must not finish a paused
+    // track, or cut off audio because source resolution took several seconds.
+    if (sameSource && ["LOADING", "PLAYING", "PAUSED"].includes(playback.state ?? "")) {
+      return;
+    }
+
+  } catch (error) {
+
+    /*
+     * Uma falha momentânea da API local
+     * não deve destruir o AutoDJ.
+     */
+    console.error(
+      "⚠️ Audio Engine status indisponível:",
+      error instanceof Error
+        ? error.message
+        : error,
+    );
   }
+
+
+  // Unknown/unreachable engine state is not evidence that playback finished.
+  // Retry on the next tick; only confirmed IDLE completes the queue item.
+
 }
 
 /*
@@ -1008,10 +1232,13 @@ async function monitorActive() {
  * LOOP AUTODJ
  * ============================================================
  */
+let tickBusy = false;
 async function tick() {
-  if (stopping) {
+  if (stopping || tickBusy) {
     return;
   }
+
+  tickBusy = true;
 
   try {
     if (active) {
@@ -1028,6 +1255,8 @@ async function tick() {
         ? error.message
         : error,
     );
+  } finally {
+    tickBusy = false;
   }
 }
 

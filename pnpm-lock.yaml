@@ -42,6 +42,22 @@ importers:
         specifier: ^4.6.5
         version: 4.6.5
 
+  apps/audio-engine:
+    dependencies:
+      dotenv:
+        specifier: ^18.0.0
+        version: 18.0.0
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 26.6.1
+      tsx:
+        specifier: '*'
+        version: 4.23.13
+      typescript:
+        specifier: '*'
+        version: 7.0.2
+
   apps/bot:
     dependencies:
       dotenv:
@@ -73,6 +89,24 @@ importers:
       '@types/node':
         specifier: '*'
         version: 24.13.5
+      tsx:
+        specifier: '*'
+        version: 4.23.13
+      typescript:
+        specifier: '*'
+        version: 7.0.2
+
+  apps/source-resolver: {}
+
+  apps/spotify-control:
+    dependencies:
+      dotenv:
+        specifier: ^18.0.0
+        version: 18.0.0
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 26.6.1
       tsx:
         specifier: '*'
         version: 4.23.13

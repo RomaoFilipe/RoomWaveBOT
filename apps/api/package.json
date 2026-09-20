@@ -1,0 +1,20 @@
+{
+  "name": "@roomwave/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.3.0",
+    "@roomwave/database": "workspace:*",
+    "@roomwave/music": "workspace:*",
+    "dotenv": "^18.0.0",
+    "fastify": "^5.12.5",
+    "zod": "^4.6.5"
+  }
+}

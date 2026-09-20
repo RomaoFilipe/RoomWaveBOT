@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>RoomWave Player</title>
+
+<style>
+* { box-sizing:border-box; }
+
+html,body {
+  margin:0;
+  width:100%;
+  min-height:100%;
+  background:#080a0f;
+  color:#fff;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+body {
+  padding:20px;
+}
+
+.app {
+  max-width:1200px;
+  margin:auto;
+}
+
+.header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:16px;
+}
+
+.brand {
+  font-size:22px;
+  font-weight:800;
+}
+
+.brand span {
+  color:#8066ff;
+}
+
+.state {
+  padding:8px 14px;
+  border-radius:20px;
+  background:#171b24;
+  font-size:12px;
+  font-weight:bold;
+}
+
+.card {
+  border:1px solid #252b38;
+  background:#10131b;
+  border-radius:18px;
+  overflow:hidden;
+}
+
+.player {
+  width:100%;
+  aspect-ratio:16/9;
+  background:#000;
+}
+
+#youtube-player,
+#youtube-player iframe {
+  width:100% !important;
+  height:100% !important;
+}
+
+.info {
+  padding:18px;
+}
+
+.label {
+  color:#788397;
+  font-size:11px;
+  font-weight:bold;
+  letter-spacing:1.4px;
+}
+
+#title {
+  font-size:20px;
+  font-weight:bold;
+  margin-top:7px;
+}
+
+#author {
+  color:#8994a7;
+  margin-top:4px;
+  font-size:13px;
+}
+
+.input-row {
+  display:flex;
+  gap:10px;
+  padding:0 18px 18px;
+}
+
+input[type=text] {
+  flex:1;
+  min-width:0;
+  background:#080a0f;
+  color:#fff;
+  border:1px solid #2b3140;
+  border-radius:10px;
+  padding:13px;
+  font-size:14px;
+}
+
+button {
+  border:0;
+  border-radius:10px;
+  padding:0 18px;
+  min-height:44px;
+  background:#262c39;
+  color:#fff;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+button.primary {
+  background:#785cff;
+}
+
+.controls {
+  padding:0 18px 18px;
+}
+
+.buttons {
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin-bottom:16px;
+}
+
+.timeline {
+  display:grid;
+  grid-template-columns:55px 1fr 55px;
+  align-items:center;
+  gap:10px;
+}
+
+input[type=range] {
+  width:100%;
+  accent-color:#785cff;
+}
+
+.time {
+  color:#9099aa;
+  font-size:12px;
+}
+
+.error {
+  display:none;
+  margin:0 18px 18px;
+  border:1px solid #71303b;
+  background:#35171d;
+  color:#ff8896;
+  border-radius:10px;
+  padding:12px;
+}
+
+.footer {
+  display:flex;
+  justify-content:space-between;
+  gap:20px;
+  border-top:1px solid #252b38;
+  padding:15px 18px;
+  background:#0c0f15;
+}
+
+.meta {
+  display:flex;
+  gap:25px;
+}
+
+.meta small {
+  display:block;
+  color:#697386;
+  font-size:10px;
+}
+
+.meta strong {
+  display:block;
+  margin-top:4px;
+  font-size:12px;
+}
+
+.volume {
+  display:flex;
+  gap:8px;
+  align-items:center;
+  width:200px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <div class="header">
+    <div class="brand">
+      ROOM<span>WAVE</span>
+    </div>
+
+    <div id="badge" class="state">
+      STARTING
+    </div>
+  </div>
+
+  <div class="card">
+
+    <div class="player">
+      <div id="youtube-player"></div>
+    </div>
+
+    <div class="info">
+      <div class="label">NOW PLAYING</div>
+      <div id="title">Nenhum vídeo carregado</div>
+      <div id="author">RoomWave</div>
+    </div>
+
+    <div class="input-row">
+
+      <input
+        id="input"
+        type="text"
+        placeholder="Link YouTube ou Video ID"
+      >
+
+      <button
+        class="primary"
+        onclick="loadFromInput()"
+      >
+        CARREGAR
+      </button>
+
+    </div>
+
+    <div id="error" class="error"></div>
+
+    <div class="controls">
+
+      <div class="buttons">
+
+        <button onclick="window.rwPause()">
+          ⏸ PAUSE
+        </button>
+
+        <button
+          class="primary"
+          onclick="window.rwResume()"
+        >
+          ▶ PLAY
+        </button>
+
+        <button onclick="window.rwStop()">
+          ■ STOP
+        </button>
+
+      </div>
+
+      <div class="timeline">
+
+        <span id="current" class="time">
+          00:00
+        </span>
+
+        <input
+          id="progress"
+          type="range"
+          min="0"
+          max="1000"
+          value="0"
+        >
+
+        <span id="duration" class="time">
+          00:00
+        </span>
+
+      </div>
+
+    </div>
+
+    <div class="footer">
+
+      <div class="meta">
+
+        <div>
+          <small>PLAYER</small>
+          <strong id="stateText">
+            BOOTING
+          </strong>
+        </div>
+
+        <div>
+          <small>VIDEO ID</small>
+          <strong id="videoId">
+            —
+          </strong>
+        </div>
+
+        <div>
+          <small>IFRAME API</small>
+          <strong id="apiText">
+            LOADING
+          </strong>
+        </div>
+
+      </div>
+
+      <div class="volume">
+
+        <span>🔊</span>
+
+        <input
+          id="volume"
+          type="range"
+          min="0"
+          max="100"
+          value="100"
+        >
+
+        <span id="volumeText">
+          100%
+        </span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+let player = null;
+
+let apiReady = false;
+let playerReady = false;
+
+let currentVideoId = null;
+let state = "BOOTING";
+let error = null;
+
+const states = {
+  "-1":"UNSTARTED",
+  "0":"ENDED",
+  "1":"PLAYING",
+  "2":"PAUSED",
+  "3":"BUFFERING",
+  "5":"CUED"
+};
+
+function extractVideoId(value) {
+
+  if (!value)
+    return null;
+
+  value = String(value).trim();
+
+  const markdown =
+    value.match(/\((https?:\/\/[^)]+)\)/);
+
+  if (markdown)
+    value = markdown[1];
+
+  if (
+    value.startsWith("youtube.com/") ||
+    value.startsWith("www.youtube.com/") ||
+    value.startsWith("youtu.be/") ||
+    value.startsWith("m.youtube.com/")
+  ) {
+    value = "https://" + value;
+  }
+
+  if (/^[A-Za-z0-9_-]{11}$/.test(value))
+    return value;
+
+  try {
+
+    const url = new URL(value);
+
+    const host =
+      url.hostname.replace(/^www\./,"");
+
+    if (host === "youtu.be") {
+
+      const id =
+        url.pathname
+          .split("/")
+          .filter(Boolean)[0];
+
+      return /^[A-Za-z0-9_-]{11}$/.test(id || "")
+        ? id
+        : null;
+    }
+
+    const id =
+      url.searchParams.get("v");
+
+    if (/^[A-Za-z0-9_-]{11}$/.test(id || ""))
+      return id;
+
+    const parts =
+      url.pathname
+        .split("/")
+        .filter(Boolean);
+
+    if (
+      ["embed","shorts","live"].includes(parts[0]) &&
+      /^[A-Za-z0-9_-]{11}$/.test(parts[1] || "")
+    ) {
+      return parts[1];
+    }
+
+  } catch {}
+
+  return null;
+}
+
+function formatTime(seconds) {
+
+  seconds =
+    Math.max(
+      0,
+      Math.floor(
+        Number(seconds) || 0
+      )
+    );
+
+  const h =
+    Math.floor(seconds / 3600);
+
+  const m =
+    Math.floor(
+      (seconds % 3600) / 60
+    );
+
+  const s =
+    seconds % 60;
+
+  if (h) {
+    return (
+      String(h).padStart(2,"0") +
+      ":" +
+      String(m).padStart(2,"0") +
+      ":" +
+      String(s).padStart(2,"0")
+    );
+  }
+
+  return (
+    String(m).padStart(2,"0") +
+    ":" +
+    String(s).padStart(2,"0")
+  );
+}
+
+function updateUI() {
+
+  document.getElementById(
+    "badge"
+  ).textContent = state;
+
+  document.getElementById(
+    "stateText"
+  ).textContent = state;
+
+  document.getElementById(
+    "apiText"
+  ).textContent =
+    playerReady
+      ? "READY"
+      : apiReady
+        ? "INITIALIZING"
+        : "LOADING";
+
+  document.getElementById(
+    "videoId"
+  ).textContent =
+    currentVideoId || "—";
+
+  if (playerReady && player) {
+
+    try {
+
+      const data =
+        player.getVideoData();
+
+      if (data?.title)
+        document.getElementById("title").textContent =
+          data.title;
+
+      if (data?.author)
+        document.getElementById("author").textContent =
+          data.author;
+
+      const current =
+        player.getCurrentTime() || 0;
+
+      const duration =
+        player.getDuration() || 0;
+
+      document.getElementById("current").textContent =
+        formatTime(current);
+
+      document.getElementById("duration").textContent =
+        formatTime(duration);
+
+      document.getElementById("progress").value =
+        duration > 0
+          ? Math.round(current / duration * 1000)
+          : 0;
+
+    } catch {}
+  }
+
+  const box =
+    document.getElementById("error");
+
+  if (error !== null) {
+
+    box.style.display = "block";
+
+    const descriptions = {
+      2:"Video ID inválido",
+      5:"Erro de reprodução HTML5",
+      100:"Vídeo removido ou privado",
+      101:"O proprietário não permite reprodução incorporada",
+      150:"O proprietário não permite reprodução incorporada",
+      153:"Identificação/origin do player em falta"
+    };
+
+    box.textContent =
+      `YouTube error ${error}: ${
+        descriptions[error] || "Erro desconhecido"
+      }`;
+
+  } else {
+
+    box.style.display = "none";
+  }
+}
+
+window.onYouTubeIframeAPIReady =
+function() {
+
+  apiReady = true;
+
+  player =
+    new YT.Player(
+      "youtube-player",
+      {
+        width:"100%",
+        height:"100%",
+
+        playerVars:{
+          autoplay:1,
+          controls:1,
+          playsinline:1,
+          rel:0,
+          enablejsapi:1,
+          origin:window.location.origin
+        },
+
+        events:{
+
+          onReady() {
+
+            playerReady = true;
+            state = "IDLE";
+            error = null;
+
+            player.setVolume(100);
+
+            updateUI();
+          },
+
+          onStateChange(event) {
+
+            /*
+             * Não substituir ERROR por UNSTARTED
+             * imediatamente após onError.
+             */
+            if (
+              error !== null &&
+              event.data === -1
+            ) {
+              return;
+            }
+
+            state =
+              states[event.data] ||
+              `STATE_${event.data}`;
+
+            updateUI();
+          },
+
+          onError(event) {
+
+            error = event.data;
+            state = "ERROR";
+
+            updateUI();
+          },
+
+          onAutoplayBlocked() {
+
+            state =
+              "AUTOPLAY_BLOCKED";
+
+            updateUI();
+          }
+        }
+      }
+    );
+};
+
+window.rwStatus =
+function() {
+
+  let currentTime = 0;
+  let duration = 0;
+  let volume = 100;
+  let title = "";
+  let author = "";
+
+  if (playerReady && player) {
+
+    try {
+      currentTime =
+        player.getCurrentTime() || 0;
+
+      duration =
+        player.getDuration() || 0;
+
+      volume =
+        player.getVolume() || 100;
+
+      const data =
+        player.getVideoData();
+
+      title =
+        data?.title || "";
+
+      author =
+        data?.author || "";
+
+    } catch {}
+  }
+
+  return {
+    apiReady,
+    playerReady,
+    state,
+    error,
+    videoId:currentVideoId,
+    currentTime,
+    duration,
+    volume,
+    title,
+    author
+  };
+};
+
+window.rwPlay =
+function(input) {
+
+  const id =
+    extractVideoId(input);
+
+  if (!id) {
+
+    state = "ERROR";
+    error = "INVALID_INPUT";
+
+    updateUI();
+
+    return window.rwStatus();
+  }
+
+  if (!playerReady) {
+
+    state = "ERROR";
+    error = "PLAYER_NOT_READY";
+
+    updateUI();
+
+    return window.rwStatus();
+  }
+
+  currentVideoId = id;
+  error = null;
+  state = "LOADING";
+
+  document.getElementById("input").value =
+    `https://www.youtube.com/watch?v=${id}`;
+
+  player.loadVideoById({
+    videoId:id,
+    startSeconds:0
+  });
+
+  updateUI();
+
+  return window.rwStatus();
+};
+
+/* Compatibilidade com versões anteriores */
+window.rwLoad = window.rwPlay;
+window.rwLoadVideo = window.rwPlay;
+window.rwPlayVideo = window.rwPlay;
+
+window.rwPause =
+function() {
+
+  if (playerReady)
+    player.pauseVideo();
+
+  return window.rwStatus();
+};
+
+window.rwResume =
+function() {
+
+  if (playerReady) {
+
+    error = null;
+
+    player.playVideo();
+  }
+
+  return window.rwStatus();
+};
+
+window.rwStop =
+function() {
+
+  if (playerReady)
+    player.stopVideo();
+
+  state = "IDLE";
+  error = null;
+
+  updateUI();
+
+  return window.rwStatus();
+};
+
+function loadFromInput() {
+
+  const input =
+    document
+      .getElementById("input")
+      .value;
+
+  window.rwPlay(input);
+}
+
+document
+  .getElementById("input")
+  .addEventListener(
+    "keydown",
+    event => {
+
+      if (event.key === "Enter")
+        loadFromInput();
+    }
+  );
+
+document
+  .getElementById("progress")
+  .addEventListener(
+    "change",
+    event => {
+
+      if (!playerReady)
+        return;
+
+      const duration =
+        player.getDuration();
+
+      if (!duration)
+        return;
+
+      player.seekTo(
+        duration *
+        Number(event.target.value) /
+        1000,
+        true
+      );
+    }
+  );
+
+document
+  .getElementById("volume")
+  .addEventListener(
+    "input",
+    event => {
+
+      if (!playerReady)
+        return;
+
+      const volume =
+        Number(event.target.value);
+
+      player.setVolume(volume);
+
+      if (volume > 0)
+        player.unMute();
+
+      document.getElementById(
+        "volumeText"
+      ).textContent =
+        volume + "%";
+    }
+  );
+
+setInterval(updateUI,500);
+
+const script =
+  document.createElement("script");
+
+script.src =
+  "https://www.youtube.com/iframe_api";
+
+document.head.appendChild(script);
+
+updateUI();
+</script>
+
+</body>
+</html>

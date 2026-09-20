@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment
+.env
+.env.local
+.env.production
+.env.development
+.data/nodelink/youtube-oauth.env
+
+# Build
+dist/
+build/
+.next/
+out/
+
+# Logs
+*.log
+logs/
+
+# Runtime
+*.pid
+*.pid.lock
+
+# Testing
+coverage/
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker data
+docker-data/
+
+# Temporary files
+tmp/
+temp/
+
+# Private runtime data, sessions and local experiments
+.data/
+.backups/
+_reference/
+.venv/
+__pycache__/
+*.pyc
+*.backup*
+*.before-*
+*cookies*.txt
+radio/secret.liq
+radio/fallback/
+radio/test/
+nodelink-test/
+lavalink-test/
+*.sqlite*
+
+*.bak

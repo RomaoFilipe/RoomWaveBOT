@@ -1,0 +1,31 @@
+{
+  "name": "@roomwave/bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/main.ts",
+    "watch": "tsx watch src/main.ts",
+    "imvu:probe": "tsx src/imvu/probe.ts",
+    "typecheck": "tsc --noEmit",
+    "imvu:join-test": "tsx src/imvu/join-test.ts",
+    "imvu:inspect-login": "tsx src/imvu/inspect-login.ts",
+    "imvu:room-test": "tsx src/imvu/room-live-test.ts",
+    "imvu:chat-probe": "tsx src/imvu/chat-probe.ts",
+    "imvu:listen-test": "tsx src/imvu/chat-listen-test.ts",
+    "imvu:live": "tsx src/imvu/live-bot.ts",
+    "imvu:realtime-test": "tsx src/imvu/realtime-test.ts",
+    "imvu:ws-probe": "tsx src/imvu/ws-probe.ts",
+    "imvu:ws-direct": "tsx src/imvu/ws-direct-test.ts",
+    "imvu:start": "tsx src/imvu/gateway.ts"
+  },
+  "dependencies": {
+    "dotenv": "*",
+    "playwright": "*"
+  },
+  "devDependencies": {
+    "@types/node": "*",
+    "tsx": "*",
+    "typescript": "*"
+  }
+}

@@ -1,13 +1,20 @@
 export interface MusicTrack {
-  provider: "youtube";
+  provider:
+    | "audius"
+    | "youtube";
+
   externalId: string;
 
   title: string;
   artist: string;
 
-  durationSec: number | null;
+  durationSec:
+    number |
+    null;
 
-  artworkUrl: string | null;
+  artworkUrl:
+    string |
+    null;
 
   sourceUrl: string;
 }

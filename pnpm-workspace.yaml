@@ -1,0 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "!apps/*.backup-*"
+  - "!packages/*.backup-*"
+
+allowBuilds:
+  esbuild: true
+  "@prisma/engines": true
+  prisma: true
