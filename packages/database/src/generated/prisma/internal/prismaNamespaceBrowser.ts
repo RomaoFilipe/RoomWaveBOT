@@ -58,7 +58,8 @@ export const ModelName = {
   Track: 'Track',
   MusicRequest: 'MusicRequest',
   QueueItem: 'QueueItem',
-  PlaybackHistory: 'PlaybackHistory'
+  PlaybackHistory: 'PlaybackHistory',
+  CustomCommand: 'CustomCommand'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -179,6 +180,18 @@ export const PlaybackHistoryScalarFieldEnum = {
 } as const
 
 export type PlaybackHistoryScalarFieldEnum = (typeof PlaybackHistoryScalarFieldEnum)[keyof typeof PlaybackHistoryScalarFieldEnum]
+
+
+export const CustomCommandScalarFieldEnum = {
+  id: 'id',
+  roomId: 'roomId',
+  name: 'name',
+  response: 'response',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CustomCommandScalarFieldEnum = (typeof CustomCommandScalarFieldEnum)[keyof typeof CustomCommandScalarFieldEnum]
 
 
 export const SortOrder = {

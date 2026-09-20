@@ -1,3 +1,4 @@
+import { manageCommand, customReply } from "./custom.js";
 import { rulesCommand, radioCommand, staffCommand } from "./room-info.js";
 import { volumeCommand } from "./volume.js";
 import {
@@ -66,6 +67,12 @@ export async function handleCommand(
   switch (
     command.toLowerCase()
   ) {
+    case "criarcomando":
+    case "editarcomando":
+    case "apagarcomando":
+    case "listarcomandos":
+      return manageCommand(command.toLowerCase(), args, context.imvuUserId);
+
     case "add":
       return addCommand(
         args,
@@ -111,8 +118,6 @@ export async function handleCommand(
       return helpCommand();
 
     default:
-      return (
-        `❓ Comando desconhecido: !${command}`
-      );
+      return customReply(command);
   }
 }

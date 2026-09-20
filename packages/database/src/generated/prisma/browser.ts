@@ -57,3 +57,8 @@ export type QueueItem = Prisma.QueueItemModel
  * 
  */
 export type PlaybackHistory = Prisma.PlaybackHistoryModel
+/**
+ * Model CustomCommand
+ * 
+ */
+export type CustomCommand = Prisma.CustomCommandModel

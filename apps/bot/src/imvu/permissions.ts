@@ -64,7 +64,7 @@ export function canRunCommand(
    * Desligar completamente o bot
    * é exclusivo do OWNER.
    */
-  if (name === "!disconnect") {
+  if (["!disconnect", "!criarcomando", "!editarcomando", "!apagarcomando", "!listarcomandos"].includes(name)) {
     return role === "OWNER";
   }
 

@@ -394,3 +394,22 @@ export async function getRoomStaff(): Promise<Array<{ role: string; user: { user
     .filter((member: { role: string }) => ["OWNER", "ADMIN", "MODERATOR", "DJ"].includes(member.role))
     .map((member: { role: string; user: { username: string } }) => ({ role: member.role, user: { username: member.user.username } }));
 }
+
+export async function customCommandRequest(name: string): Promise<string | null> {
+  const { roomId } = requireRoom();
+  const response = await fetch(`${getApiUrl()}/api/rooms/${roomId}/commands/${encodeURIComponent(name)}`, { signal: AbortSignal.timeout(5000) });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error("CUSTOM_COMMAND_UNAVAILABLE");
+  return (await response.json()).response;
+}
+
+export async function manageCustomCommand(payload: { action: string; imvuUserId: string; name?: string; response?: string }) {
+  const { readFile } = await import("node:fs/promises");
+  const key = (await readFile("/home/ubuntu/roomwave/.data/custom-commands.key", "utf8")).trim();
+  const { roomId } = requireRoom();
+  const response = await fetch(`${getApiUrl()}/api/rooms/${roomId}/commands`, {
+    method: "POST", headers: { "Content-Type": "application/json", "x-roomwave-bot-key": key },
+    body: JSON.stringify(payload), signal: AbortSignal.timeout(7000),
+  });
+  return { status: response.status, body: await readJson(response) };
+}

@@ -404,7 +404,8 @@ export const ModelName = {
   Track: 'Track',
   MusicRequest: 'MusicRequest',
   QueueItem: 'QueueItem',
-  PlaybackHistory: 'PlaybackHistory'
+  PlaybackHistory: 'PlaybackHistory',
+  CustomCommand: 'CustomCommand'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -420,7 +421,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "room" | "roomMember" | "djAssignment" | "track" | "musicRequest" | "queueItem" | "playbackHistory"
+    modelProps: "user" | "room" | "roomMember" | "djAssignment" | "track" | "musicRequest" | "queueItem" | "playbackHistory" | "customCommand"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1016,6 +1017,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    CustomCommand: {
+      payload: Prisma.$CustomCommandPayload<ExtArgs>
+      fields: Prisma.CustomCommandFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CustomCommandFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomCommandPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CustomCommandFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomCommandPayload>
+        }
+        findFirst: {
+          args: Prisma.CustomCommandFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomCommandPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CustomCommandFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomCommandPayload>
+        }
+        findMany: {
+          args: Prisma.CustomCommandFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomCommandPayload>[]
+        }
+        create: {
+          args: Prisma.CustomCommandCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomCommandPayload>
+        }
+        createMany: {
+          args: Prisma.CustomCommandCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CustomCommandCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomCommandPayload>[]
+        }
+        delete: {
+          args: Prisma.CustomCommandDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomCommandPayload>
+        }
+        update: {
+          args: Prisma.CustomCommandUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomCommandPayload>
+        }
+        deleteMany: {
+          args: Prisma.CustomCommandDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CustomCommandUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CustomCommandUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomCommandPayload>[]
+        }
+        upsert: {
+          args: Prisma.CustomCommandUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomCommandPayload>
+        }
+        aggregate: {
+          args: Prisma.CustomCommandAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCustomCommand>
+        }
+        groupBy: {
+          args: Prisma.CustomCommandGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CustomCommandGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CustomCommandCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CustomCommandCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1157,6 +1232,18 @@ export const PlaybackHistoryScalarFieldEnum = {
 } as const
 
 export type PlaybackHistoryScalarFieldEnum = (typeof PlaybackHistoryScalarFieldEnum)[keyof typeof PlaybackHistoryScalarFieldEnum]
+
+
+export const CustomCommandScalarFieldEnum = {
+  id: 'id',
+  roomId: 'roomId',
+  name: 'name',
+  response: 'response',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CustomCommandScalarFieldEnum = (typeof CustomCommandScalarFieldEnum)[keyof typeof CustomCommandScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1473,6 +1560,7 @@ export type GlobalOmitConfig = {
   musicRequest?: Prisma.MusicRequestOmit
   queueItem?: Prisma.QueueItemOmit
   playbackHistory?: Prisma.PlaybackHistoryOmit
+  customCommand?: Prisma.CustomCommandOmit
 }
 
 /* Types for Logging */

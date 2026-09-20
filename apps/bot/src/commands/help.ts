@@ -13,5 +13,7 @@ export function helpCommand(): string {
     "!radio - link da rádio",
     "!staff - equipa da sala",
     "!comandos / !help - mostrar comandos",
+    "Dono: !criarcomando / !editarcomando <nome> <texto>",
+    "Dono: !apagarcomando <nome> / !listarcomandos",
   ].join("\n");
 }
