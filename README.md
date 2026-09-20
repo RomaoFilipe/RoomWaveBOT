@@ -2,7 +2,7 @@
 
 Bot para salas IMVU com pedidos musicais, rádio online e comandos de gestão da sala. Desenvolvido em TypeScript e Node.js, com serviços independentes numa instância Ubuntu da AWS EC2.
 
-> Estado: reprodução YouTube com OAuth testada, rádio operacional e comandos personalizados disponíveis. O dashboard está planeado; ainda não está implementado. O acesso ao áudio depende da disponibilidade do YouTube e das credenciais configuradas.
+> Estado: reprodução YouTube com OAuth testada, rádio operacional e comandos personalizados disponíveis. Dashboard Studio disponível com login do dono, controlos e logs. O acesso ao áudio depende da disponibilidade do YouTube e das credenciais configuradas.
 
 ## Funcionalidades
 
@@ -15,6 +15,7 @@ Bot para salas IMVU com pedidos musicais, rádio online e comandos de gestão da
 - Volume em tempo real pelo chat, sem reiniciar a música.
 - Informações da sala: regras, rádio, staff e ajuda.
 - Comandos personalizados por sala, geridos exclusivamente pelo OWNER.
+- Dashboard web responsivo: fila, reprodução, volume, ligação do bot, comandos e logs filtrados.
 
 ## Arquitetura
 
@@ -44,6 +45,7 @@ Spotify Control, Browser Player e experiências Lavalink fazem parte do históri
 
 | Pasta | Responsabilidade |
 | --- | --- |
+| `apps/dashboard` | Studio web com login do dono e integração com as APIs |
 | `apps/bot` | Gateway IMVU, comandos e respostas no chat |
 | `apps/api` | Salas, membros, pedidos, fila e comandos personalizados |
 | `apps/player` | AutoDJ, recuperação e limpeza dos ficheiros temporários |
@@ -194,4 +196,4 @@ node --env-file=.env --import tsx apps/api/test/custom-commands.integration.ts
 - [Comandos personalizados e permissões](docs/custom-commands.md)
 - [Histórico das experiências YouTube](docs/youtube.md)
 
-Evolução prevista: dashboard autenticado para estado dos serviços, fila, volume, comandos personalizados e logs filtrados. A interface deverá utilizar as APIs existentes, com permissões verificadas no servidor, mantendo os serviços de rádio independentes. Ainda não implementado.
+O [RoomWave Studio](docs/dashboard.md) está disponível em `/dashboard/`, com login próprio do dono. Para consultar os dados de acesso na EC2: `cat /home/ubuntu/roomwave/.data/dashboard/access.txt`. O dashboard usa as APIs existentes e é independente dos serviços da rádio.

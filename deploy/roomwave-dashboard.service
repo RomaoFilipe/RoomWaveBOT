@@ -1,0 +1,22 @@
+[Unit]
+Description=RoomWave Studio dashboard
+After=network-online.target roomwave-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/roomwave
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node --env-file=/home/ubuntu/roomwave/.env /home/ubuntu/roomwave/apps/dashboard/server.mjs
+Restart=on-failure
+RestartSec=5
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+MemoryMax=180M
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

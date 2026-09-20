@@ -1,0 +1,7 @@
+#!/bin/sh
+# Narrow root helper: never accept a unit name or arbitrary command.
+[ "$#" -eq 1 ] || exit 64
+case "$1" in
+  start|stop|restart) exec /usr/bin/systemctl "$1" roomwave-imvu.service ;;
+  *) exit 64 ;;
+esac
