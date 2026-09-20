@@ -1,3 +1,4 @@
+import { applyActiveRoom } from "../../../tools/room-runtime.mjs";
 import {
   resolvePlayableUri,
 } from "./source-resolver.js";
@@ -13,6 +14,8 @@ config({
     ),
   ),
 });
+
+applyActiveRoom();
 
 /*
  * Import dinâmico:

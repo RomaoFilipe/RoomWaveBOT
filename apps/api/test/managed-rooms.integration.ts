@@ -1,0 +1,41 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import Fastify from "fastify";
+import { prisma } from "@roomwave/database";
+import { managedRoomsRoutes } from "../src/routes/managed-rooms.js";
+const app=Fastify();await app.register(managedRoomsRoutes);
+const seed=randomUUID();const ids:string[]=[];const tracks:string[]=[];const users:string[]=[];
+try{
+ const owner=await prisma.user.create({data:{username:'Room control test',imvuUserId:seed}});users.push(owner.id);
+ const admin=await prisma.user.create({data:{username:'Admin test',imvuUserId:seed+'-admin'}});users.push(admin.id);
+ const origin=await prisma.room.create({data:{name:'Test origin '+seed,members:{create:[{userId:owner.id,role:'OWNER'},{userId:admin.id,role:'ADMIN'}]}}});ids.push(origin.id);
+ const other=await prisma.room.create({data:{name:'Unowned '+seed}});ids.push(other.id);
+ const key=(await readFile('/home/ubuntu/roomwave/.data/custom-commands.key','utf8')).trim();
+ const call=(payload:object,auth=true)=>app.inject({method:'POST',url:'/managed-rooms',headers:auth?{'x-roomwave-bot-key':key}:{},payload:{managementRoomId:origin.id,imvuUserId:seed,...payload}});
+ assert.equal((await call({action:'list'},false)).statusCode,401);
+ assert.equal((await call({action:'list',imvuUserId:seed+'-admin'})).statusCode,403);
+ assert.equal((await call({action:'get',roomId:other.id})).statusCode,403);
+ assert.equal((await call({action:'save',name:'Invalid',location:'https://evil.test/chat/room-1-2'})).statusCode,400);
+ const location=`999999999-${Date.now()}`;
+ const created=await call({action:'save',name:'Saved test room',location});assert.equal(created.statusCode,200);
+ const target=created.json().room;ids.push(target.id);
+ assert.equal((await call({action:'save',name:'Duplicate',location})).json().room.id,target.id);
+ const list=(await call({action:'list'})).json().rooms;
+ assert.ok(list.some((r:{id:string})=>r.id===target.id));assert.ok(!list.some((r:{id:string})=>r.id===other.id));
+ const track=await prisma.track.create({data:{provider:'test',externalId:seed,title:'Room switch test',artist:'Test'}});tracks.push(track.id);
+ const playing=await prisma.queueItem.create({data:{roomId:origin.id,trackId:track.id,position:1,status:'PLAYING',requestedById:owner.id}});
+ await prisma.queueItem.create({data:{roomId:origin.id,trackId:track.id,position:1,status:'WAITING'}});
+ await prisma.queueItem.create({data:{roomId:target.id,trackId:track.id,position:1,status:'WAITING'}});
+ const history=await prisma.playbackHistory.create({data:{roomId:origin.id,trackId:track.id}});
+ const musicRequest=await prisma.musicRequest.create({data:{roomId:origin.id,trackId:track.id,requestedById:owner.id,query:'test',status:'QUEUED'}});
+ assert.equal((await call({action:'release',roomId:origin.id})).statusCode,200);
+ const queue=await prisma.queueItem.findMany({where:{roomId:origin.id},orderBy:{position:'asc'}});
+ assert.equal(queue[0].id,playing.id);assert.deepEqual(queue.map(q=>q.status),['WAITING','WAITING']);assert.deepEqual(queue.map(q=>q.position),[1,2]);
+ assert.ok((await prisma.playbackHistory.findUniqueOrThrow({where:{id:history.id}})).endedAt);
+ assert.equal((await prisma.musicRequest.findUniqueOrThrow({where:{id:musicRequest.id}})).status,'QUEUED');
+ assert.equal(await prisma.queueItem.count({where:{roomId:target.id,status:'WAITING'}}),1);
+ console.log('Room ownership, canonical links, registration and queue preservation: OK');
+}finally{
+ await prisma.room.deleteMany({where:{id:{in:ids}}});await prisma.track.deleteMany({where:{id:{in:tracks}}});await prisma.user.deleteMany({where:{id:{in:users}}});await prisma.$disconnect();await app.close();
+}

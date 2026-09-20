@@ -14,6 +14,7 @@ RestartSec=5
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/roomwave/.data/room-control /home/ubuntu/roomwave/.data/audio/cache
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
 MemoryMax=180M
 UMask=0077

@@ -11,6 +11,7 @@ em `127.0.0.1:3240`; o acesso externo passa pelo HTTPS do Caddy em `/dashboard/`
 - Pausa/retoma e volume global.
 - Ligar, desligar e reiniciar apenas o bot IMVU.
 - Criar, editar e apagar comandos personalizados.
+- Salas guardadas, seleção de uma sala ativa e estado da entrada (ver [Salas](rooms.md)).
 - Últimas 80 entradas de logs dos serviços permitidos; atualização automática opcional.
 - Indicadores de serviços; estar ativo significa processo em execução, não presença
   confirmada na sala ou receção do áudio por todos os ouvintes.
@@ -86,7 +87,7 @@ como password/token. É uma filtragem defensiva, não garantia de remoção de q
 segredo arbitrário escrito em mensagens. Podem conter nomes e texto do chat, e
 são exclusivos do dono. Logs NodeLink/OAuth e ficheiros `.env` não são expostos.
 
-Esta versão administra uma sala configurada por servidor. Não inclui gestão de
+Esta versão guarda várias salas e ativa uma de cada vez. Não inclui gestão de
 contas, permissões por utilizador do dashboard, editor de `.env`, atualizações de
 código ou reinício dos componentes de rádio. Serviços internos existentes devem
 continuar protegidos da Internet independentemente do login deste painel.

@@ -15,6 +15,7 @@ Bot para salas IMVU com pedidos musicais, rádio online e comandos de gestão da
 - Volume em tempo real pelo chat, sem reiniciar a música.
 - Informações da sala: regras, rádio, staff e ajuda.
 - Comandos personalizados por sala, geridos exclusivamente pelo OWNER.
+- Salas guardadas no dashboard, com um bot ativo de cada vez e filas separadas por sala.
 - Dashboard web responsivo: fila, reprodução, volume, ligação do bot, comandos e logs filtrados.
 
 ## Arquitetura
@@ -193,6 +194,7 @@ node --env-file=.env --import tsx apps/api/test/custom-commands.integration.ts
 ## Documentação e próximos passos
 
 - [Verificação NodeLink/OAuth e integração de áudio](docs/nodelink-audio-verification.md)
+- [Gestão e mudança de salas](docs/rooms.md)
 - [Comandos personalizados e permissões](docs/custom-commands.md)
 - [Histórico das experiências YouTube](docs/youtube.md)
 

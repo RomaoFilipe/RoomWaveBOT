@@ -1,1 +1,2 @@
 ubuntu ALL=(root) NOPASSWD: /usr/local/sbin/roomwave-dashboard-bot start, /usr/local/sbin/roomwave-dashboard-bot stop, /usr/local/sbin/roomwave-dashboard-bot restart
+ubuntu ALL=(root) NOPASSWD: /usr/local/sbin/roomwave-dashboard-room stop, /usr/local/sbin/roomwave-dashboard-room start-bot, /usr/local/sbin/roomwave-dashboard-room start-player

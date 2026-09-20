@@ -1,3 +1,5 @@
+import { setupRoomControl } from "./room-integration.mjs";
+import { normalizeImvuRoom } from "../../tools/room-runtime.mjs";
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
@@ -7,12 +9,13 @@ import { verifyPassword, makeRedactor } from './security.mjs';
 const exec = promisify(execFile);
 const data = new URL('../../.data/', import.meta.url);
 const auth = JSON.parse(await readFile(new URL('dashboard/auth.json', data), 'utf8'));
-const roomId = process.env.ROOMWAVE_ROOM_ID;
+const managementRoomId = process.env.ROOMWAVE_ROOM_ID;
+let roomId = managementRoomId;
 if (!roomId) throw new Error('ROOMWAVE_ROOM_ID required');
 const origin = process.env.ROOMWAVE_DASHBOARD_ORIGIN || 'https://13-220-164-169.sslip.io';
 const api = process.env.ROOMWAVE_API_URL || 'http://127.0.0.1:3001';
 const engine = process.env.ROOMWAVE_AUDIO_ENGINE_URL || 'http://127.0.0.1:3210';
-const root = `/api/rooms/${encodeURIComponent(roomId)}`;
+let root = `/api/rooms/${encodeURIComponent(roomId)}`;
 const botKey = (await readFile(new URL('custom-commands.key', data), 'utf8')).trim();
 const secrets = Object.entries(process.env).filter(([k]) => /password|secret|token|key|database_url/i.test(k)).map(([,v]) => v);
 secrets.push(botKey, auth.hash);
@@ -46,7 +49,7 @@ async function request(base,path,payload){
   return result;
 }
 async function owner(){
-  const {room}=await request(api,root);
+  const {room}=await request(api,`/api/rooms/${encodeURIComponent(managementRoomId)}`);
   const owners=room.members.filter(m=>m.role==='OWNER'&&m.user.imvuUserId);
   const boundId=process.env.ROOMWAVE_DASHBOARD_OWNER_IMVU_ID || auth.ownerImvuId;
   const chosen=owners.find(m=>m.user.imvuUserId===boundId);
@@ -54,10 +57,15 @@ async function owner(){
   return {imvuUserId:chosen.user.imvuUserId, username:chosen.user.username, roomName:room.name};
 }
 async function serviceStates(){
-  const args=['show',...Object.values(units).map(u=>u+'.service'),'--property=Id,ActiveState,SubState','--no-pager'];
+  const args=['show',...Object.values(units).map(u=>u+'.service'),'--property=Id,ActiveState,SubState,MainPID','--no-pager'];
   const {stdout}=await exec('/usr/bin/systemctl',args,{timeout:5000,maxBuffer:16000});
   return stdout.trim().split(/\n\n+/).map(block=>Object.fromEntries(block.split('\n').map(l=>{const i=l.indexOf('=');return[l.slice(0,i),l.slice(i+1)];})));
 }
+const rooms = await setupRoomControl({
+  roomId, managementRoomId, actorId:process.env.ROOMWAVE_DASHBOARD_OWNER_IMVU_ID || auth.ownerImvuId,
+  request, api, engine, exec, serviceStates,
+  onActive:value=>{roomId=value.roomId;root=`/api/rooms/${encodeURIComponent(roomId)}`;},
+});
 let busy=false;
 const server=createServer(async(req,res)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');
@@ -88,10 +96,36 @@ const server=createServer(async(req,res)=>{
     if(!token||!sessions.has(token)||sessions.get(token)<Date.now())return json(res,401,{error:'LOGIN_REQUIRED'});
     if(req.method==='POST'&&path==='/dashboard/api/logout'){sessions.delete(token);res.setHeader('Set-Cookie','rw_session=; Path=/dashboard; HttpOnly; Secure; SameSite=Strict; Max-Age=0');return json(res,200,{ok:true});}
     const actor=await owner(); // Recheck OWNER before every privileged request.
+    if(req.method==='GET'&&path==='/dashboard/api/rooms'){
+      const saved=await rooms.managed({action:'list'});
+      return json(res,200,{...saved,active:rooms.controller.active,operation:rooms.controller.operation,connection:await rooms.botStatus()});
+    }
+    if(req.method==='POST'&&path==='/dashboard/api/rooms'){
+      if(busy||rooms.controller.switching)return json(res,409,{error:'ROOM_SWITCH_IN_PROGRESS'});
+      const input=await body(req);
+      if(input.action==='save'){
+        busy=true;
+        try{return json(res,200,await rooms.managed({action:'save',name:input.name,location:input.location}));}finally{busy=false;}
+      }
+      if(input.action==='activate'){
+        busy=true;
+        try{
+          const {room}=await rooms.managed({action:'get',roomId:input.roomId});
+          const target={roomId:room.id,...normalizeImvuRoom(room.imvuRoomId)};
+          if(target.roomId===roomId){
+            await exec('/usr/bin/sudo',['-n','/usr/local/sbin/roomwave-dashboard-bot','start'],{timeout:30000,maxBuffer:8000});
+            return json(res,200,{ok:true,unchanged:true});
+          }
+          await rooms.controller.begin(target);
+          return json(res,202,{ok:true,switching:true});
+        }finally{busy=false;}
+      }
+      return json(res,400,{error:'INVALID_ACTION'});
+    }
     if(req.method==='GET'&&path==='/dashboard/api/status'){
-      const results=await Promise.allSettled([request(engine,'/status'),request(api,root+'/queue'),request(api,root+'/volume',{imvuUserId:actor.imvuUserId}),serviceStates()]);
+      const results=await Promise.allSettled([request(engine,'/status'),request(api,root+'/queue'),request(api,root+'/volume',{imvuUserId:actor.imvuUserId}),serviceStates(),request(api,root)]);
       const values=results.map(r=>r.status==='fulfilled'?r.value:null), playback=values[0];
-      return json(res,200,{owner:actor.username,room:actor.roomName,playback:playback?{state:playback.state,title:playback.current?.title??null,startedAt:playback.startedAt,lastError:playback.lastError}:null,
+      return json(res,200,{owner:actor.username,room:values[4]?.room?.name??actor.roomName,roomId,roomSwitch:rooms.controller.operation,playback:playback?{state:playback.state,title:playback.current?.title??null,startedAt:playback.startedAt,lastError:playback.lastError}:null,
         queue:values[1]?.queue.map(q=>({position:q.position,title:q.track.title,artist:q.track.artist,duration:q.track.durationSec,requestedBy:q.requestedBy?.username??'AutoDJ'}))??null,
         volume:values[2]?.volume??null,services:values[3],partial:values.some(v=>v===null)});
     }
@@ -108,7 +142,7 @@ const server=createServer(async(req,res)=>{
       return json(res,200,{logs});
     }
     if(req.method==='POST'&&path==='/dashboard/api/action'){
-      if(busy)return json(res,409,{error:'ACTION_IN_PROGRESS'});
+      if(busy||rooms.controller.switching)return json(res,409,{error:'ACTION_IN_PROGRESS'});
       const input=await body(req),identity={imvuUserId:actor.imvuUserId};
       busy=true;
       try{
@@ -127,7 +161,7 @@ const server=createServer(async(req,res)=>{
     }
     return json(res,404,{error:'NOT_FOUND'});
   }catch(error){
-    const allowed=['OWNER_NOT_CONFIGURED','INVALID_QUERY','INVALID_POSITION','INVALID_VOLUME','RESERVED_OR_INVALID_NAME','ALREADY_EXISTS','NOT_FOUND','RESPONSE_REQUIRED','INVALID_COMMAND','NO_TRACK_PLAYING','QUEUE_EMPTY','PLAYBACK_NOT_READY'];
+    const allowed=['INVALID_ROOM','INVALID_IMVU_ROOM','ROOM_NOT_OWNED','ROOM_ALREADY_EXISTS','ROOM_SWITCH_IN_PROGRESS','OWNER_NOT_CONFIGURED','INVALID_QUERY','INVALID_POSITION','INVALID_VOLUME','RESERVED_OR_INVALID_NAME','ALREADY_EXISTS','NOT_FOUND','RESPONSE_REQUIRED','INVALID_COMMAND','NO_TRACK_PLAYING','QUEUE_EMPTY','PLAYBACK_NOT_READY'];
     const code=allowed.includes(error.message)?error.message:'SERVICE_UNAVAILABLE';
     console.error('Dashboard request failed:',code);
     return json(res,code==='SERVICE_UNAVAILABLE'?503:400,{error:code});

@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+[ "$#" -eq 1 ] || exit 64
+case "$1" in
+  stop) exec /usr/bin/systemctl stop roomwave-imvu.service roomwave-player.service ;;
+  start-bot) exec /usr/bin/systemctl start roomwave-imvu.service ;;
+  start-player) exec /usr/bin/systemctl start roomwave-player.service ;;
+  *) exit 64 ;;
+esac

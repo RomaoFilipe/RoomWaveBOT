@@ -1,3 +1,4 @@
+import { applyActiveRoom, reportBotRoom } from "../../../../tools/room-runtime.mjs";
 import { config } from "dotenv";
 import { fileURLToPath } from "node:url";
 import type { Page } from "playwright";
@@ -21,6 +22,9 @@ config({
     new URL("../../../../.env", import.meta.url),
   ),
 });
+
+applyActiveRoom();
+reportBotRoom("joining");
 
 const username =
   process.env.IMVU_BOT_USERNAME;
@@ -268,6 +272,7 @@ await page.exposeFunction(
           "🛑 RoomWave IMVU Gateway desligado voluntariamente.",
         );
 
+        reportBotRoom("offline");
         process.exit(0);
       }, 5000);
 
@@ -754,9 +759,29 @@ await context.addInitScript({
  * para o hook existir antes do IMVU
  * criar o socket.
  */
-await ensureInsideRoom(
-  page,
-);
+try {
+  await ensureInsideRoom(page);
+  reportBotRoom("joined");
+} catch (error) {
+  reportBotRoom("error");
+  throw error;
+}
+let checkingRoom = false;
+const roomHeartbeat = setInterval(async () => {
+  if (checkingRoom) return;
+  checkingRoom = true;
+  try {
+    const correctRoom = page.url().includes(`room-${process.env.IMVU_ROOM_ID}`);
+    // Low-resource mode removes the chat DOM. The realtime socket remains live.
+    const connected = !page.isClosed() && correctRoom && await page.evaluate(`
+      Boolean(window.__roomwaveWsState?.socket?.readyState === 1 &&
+        window.__roomwaveWsState?.chatId && window.__roomwaveWsState?.chatQueue)
+    `).catch(() => false);
+    reportBotRoom(connected ? "joined" : "error");
+  } catch { reportBotRoom("error"); }
+  finally { checkingRoom = false; }
+}, 10_000);
+roomHeartbeat.unref();
 
 console.log("");
 console.log(
@@ -1096,6 +1121,8 @@ async function stop() {
   if (stopping) return;
 
   stopping = true;
+  clearInterval(roomHeartbeat);
+  reportBotRoom("offline");
 
   console.log("");
   console.log(
