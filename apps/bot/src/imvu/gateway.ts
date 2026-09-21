@@ -1,3 +1,4 @@
+import {captureActivity,publicChat} from "./activity.js";
 import { startWelcomes } from "./welcome.js";
 import { applyActiveRoom, reportBotRoom } from "../../../../tools/room-runtime.mjs";
 import { config } from "dotenv";
@@ -39,7 +40,10 @@ if (!username || !password) {
   );
 }
 
+let activityReady = false;
+
 type WsChatMessage = {
+  isPublic?: boolean;
   text: string;
   userId: string;
   chatId: string;
@@ -186,6 +190,8 @@ await page.exposeFunction(
     ) {
       return null;
     }
+
+    if (activityReady && message.isPublic === true && /^\d{1,20}$/.test(message.userId)) void captureActivity({type:'message',userId:message.userId,text:text.slice(0,1000)});
 
     /*
      * Ignorar mensagens enviadas
@@ -472,6 +478,7 @@ await context.addInitScript({
         }
 
         const payload = {
+          isPublic: (${publicChat.toString()})(inner.to, String(outer.queue), String(inner.chatId), state.chatQueue, state.chatId),
           text:
             inner.message,
 
@@ -1116,6 +1123,7 @@ console.log(
 );
 console.log("");
 
+activityReady = true;
 const stopWelcomes = startWelcomes(context, page);
 
 let stopping = false;
@@ -1126,6 +1134,7 @@ async function stop() {
   stopping = true;
   clearInterval(roomHeartbeat);
   stopWelcomes();
+  activityReady = false;
   reportBotRoom("offline");
 
   console.log("");

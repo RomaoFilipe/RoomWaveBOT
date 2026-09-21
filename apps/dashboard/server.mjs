@@ -96,6 +96,12 @@ const server=createServer(async(req,res)=>{
     if(!token||!sessions.has(token)||sessions.get(token)<Date.now())return json(res,401,{error:'LOGIN_REQUIRED'});
     if(req.method==='POST'&&path==='/dashboard/api/logout'){sessions.delete(token);res.setHeader('Set-Cookie','rw_session=; Path=/dashboard; HttpOnly; Secure; SameSite=Strict; Max-Age=0');return json(res,200,{ok:true});}
     const actor=await owner(); // Recheck OWNER before every privileged request.
+    if(req.method==='POST'&&path==='/dashboard/api/activity'){
+      const input=await body(req);
+      if(!['read','save','clear'].includes(input.action))return json(res,400,{error:'INVALID_ACTION'});
+      if(rooms.controller.switching||input.roomId!==roomId)return json(res,409,{error:'ROOM_SWITCH_IN_PROGRESS'});
+      return json(res,200,await request(api,root+'/activity',{action:input.action,imvuUserId:actor.imvuUserId,enabled:input.enabled,query:input.query,kind:input.kind}));
+    }
     if(req.method==='POST'&&path==='/dashboard/api/imvu/lookup'){
       const input=await body(req);
       return json(res,200,await request(api,'/api/imvu/lookup',{kind:input.kind,provider:input.provider,query:input.query,roomId:managementRoomId,imvuUserId:actor.imvuUserId}));

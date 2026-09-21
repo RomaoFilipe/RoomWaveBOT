@@ -11,7 +11,7 @@ async function confirmAction(title,description="A ação será aplicada à sala 
 async function action(payload,success){if(actionBusy)return;actionBusy=true;const buttons=[...document.querySelectorAll('#app button')];buttons.forEach(b=>b.disabled=true);try{await api('action',payload);notice(success);await refresh();return true;}catch(e){notice(e.message,true);return false;}finally{actionBusy=false;buttons.forEach(b=>b.disabled=false);updatePlaybackButtons();}}
 function updatePlaybackButtons(){const state=lastStatus?.playback?.state;$('pause').disabled=actionBusy||state!=='PLAYING';$('resume').disabled=actionBusy||state!=='PAUSED';$('skip').disabled=actionBusy||!['PLAYING','PAUSED','LOADING','ERROR'].includes(state);}
 const states={PLAYING:'A tocar',PAUSED:'Em pausa',LOADING:'A preparar',IDLE:'Em espera',ERROR:'Erro de reprodução'};
-function renderStatus(data){const previousRoom=lastStatus?.roomId;lastStatus=data;if(previousRoom&&previousRoom!==data.roomId){resetCommand();if(tab==='commands'){loadCommands();loadWelcome();}}$('owner-label').textContent=data.owner;$('room-label').textContent=data.room;$('connection').textContent=data.partial?'Ligação parcial':'Ligado ao Studio';$('connection').className='badge'+(data.partial?' warn':'');
+function renderStatus(data){const previousRoom=lastStatus?.roomId;lastStatus=data;if(previousRoom&&previousRoom!==data.roomId){resetCommand();if(tab==='lookup')loadActivity();if(tab==='commands'){loadCommands();loadWelcome();}}$('owner-label').textContent=data.owner;$('room-label').textContent=data.room;$('connection').textContent=data.partial?'Ligação parcial':'Ligado ao Studio';$('connection').className='badge'+(data.partial?' warn':'');
  const bot=data.services?.find(s=>s.Id==='roomwave-imvu.service');$('bot-state').textContent=bot?.ActiveState==='active'?'Ligado':bot?.ActiveState==='inactive'?'Desligado':bot?.ActiveState||'Indisponível';$('bot-detail').textContent=bot?.ActiveState==='active'?'Gateway em execução':'Estado do serviço IMVU';
  $('queue-count').textContent=data.queue?.length??'—';$('queue-badge').textContent=data.queue?.length??'—';$('volume-metric').textContent=data.volume===null?'—':data.volume+'%';
  if(document.activeElement!==$('volume')){$('volume').value=data.volume??50;$('volume-label').textContent=data.volume===null?'—':data.volume+'%';}
@@ -29,7 +29,7 @@ let logsBusy=false;
 async function loadLogs(){if(logsBusy)return;logsBusy=true;try{const data=await api('logs?service='+encodeURIComponent($('log-service').value));$('log-output').textContent=data.logs.length?data.logs.map(l=>`${new Date(l.time).toLocaleTimeString('pt-PT')}  ${l.message}`).join('\n'):'Sem registos disponíveis para este serviço.';}catch(e){$('log-output').textContent=e.message;}finally{logsBusy=false;}}
 $('login-form').onsubmit=async event=>{event.preventDefault();const button=event.target.querySelector('button');button.disabled=true;$('login-error').textContent='';try{await api('login',{username:event.target.elements.username.value,password:event.target.elements.password.value});event.target.elements.password.value='';showApp();await refresh();}catch(e){$('login-error').textContent=e.message;}finally{button.disabled=false;}};
 $('logout').onclick=async()=>{try{await api('logout',{});showLogin();}catch(e){notice(e.message,true);}};
-for(const nav of document.querySelectorAll('[data-tab]'))nav.onclick=()=>{tab=nav.dataset.tab;for(const node of document.querySelectorAll('.page'))node.hidden=node.id!==tab;for(const node of document.querySelectorAll('[data-tab]'))node.classList.toggle('active',node===nav);$('page-name').textContent={overview:'Visão geral',rooms:'Salas',lookup:'Pesquisa IMVU',commands:'Comandos',logs:'Registo de atividade'}[tab];if(tab==='rooms')loadRooms();if(tab==='commands'){loadCommands();loadWelcome();}if(tab==='logs')loadLogs();};
+for(const nav of document.querySelectorAll('[data-tab]'))nav.onclick=()=>{tab=nav.dataset.tab;for(const node of document.querySelectorAll('.page'))node.hidden=node.id!==tab;for(const node of document.querySelectorAll('[data-tab]'))node.classList.toggle('active',node===nav);$('page-name').textContent={overview:'Visão geral',rooms:'Salas',lookup:'Ferramentas IMVU',commands:'Comandos',logs:'Registo de atividade'}[tab];if(tab==='rooms')loadRooms();if(tab==='lookup')loadActivity();if(tab==='commands'){loadCommands();loadWelcome();}if(tab==='logs')loadLogs();};
 $('add-form').onsubmit=async event=>{event.preventDefault();if(await action({action:'add',query:event.target.elements.query.value.trim()},'Música adicionada à fila.'))event.target.reset();};
 $('pause').onclick=()=>action({action:'pause'},'Reprodução em pausa.');$('resume').onclick=()=>action({action:'resume'},'Reprodução retomada.');$('skip').onclick=async()=>{if(await confirmAction('Saltar a música atual?'))await action({action:'skip'},'Música saltada.');};$('clear').onclick=async()=>{if(await confirmAction('Limpar as músicas em espera?'))await action({action:'clear'},'Fila limpa.');};
 for(const button of document.querySelectorAll('[data-bot]'))button.onclick=async()=>{const verb=button.dataset.bot;if(verb==='start'||await confirmAction(verb==='stop'?'Desligar o bot da sala?':'Reiniciar a ligação do bot?'))await action({action:'bot-'+verb},'Pedido enviado ao bot.');};
@@ -97,16 +97,24 @@ $('welcome-form').onsubmit=async event=>{
 };
 
 $('lookup-form').elements.kind.onchange=()=>{
- const room=$('lookup-form').elements.kind.value==='room';
- $('lookup-label').firstChild.textContent=room?'Link ou ID da sala':'Nome de utilizador ou CID';
- $('lookup-form').elements.query.placeholder=room?'https://go.imvu.com/chat/room-12345-678':'Diiabllo ou 208718276';
+ const form=$('lookup-form'),kind=form.elements.kind.value;
+ const labels={user:'Nome de utilizador ou CID',profile:'Nome de utilizador ou CID',outfits:'Nome de utilizador ou CID',room:'Link ou ID da sala',rooms:'Palavras para pesquisar salas',catalog:'Nome do produto ou PID'};
+ $('lookup-label').firstChild.textContent=labels[kind];form.elements.query.placeholder=kind==='room'?'12345-678':kind==='catalog'?'shirt ou 80':kind==='rooms'?'music':'Diiabllo ou 208718276';
+ form.elements.provider.disabled=!['user','room'].includes(kind);
+ $('lookup-source-note').textContent=form.elements.provider.disabled?'Esta ferramenta consulta diretamente a API IMVU. Dados restritos exigem autorização e podem não estar disponíveis.':'Utilizadores e informação de sala permitem escolher Ankh ou IMVU.';
 };
 $('lookup-form').onsubmit=async event=>{
  event.preventDefault();const form=event.target,button=form.querySelector('button'),box=$('lookup-result');button.disabled=true;box.replaceChildren(element('p','A consultar o IMVU…','muted'));
  try{
-  const {result:r}=await api('imvu/lookup',{kind:form.elements.kind.value,provider:form.elements.provider.value,query:form.elements.query.value.trim()});
+  const {result:r}=await api('imvu/lookup',{kind:form.elements.kind.value,provider:form.elements.provider.disabled?'imvu':form.elements.provider.value,query:form.elements.query.value.trim()});
+  if(Array.isArray(r.items)){
+   box.replaceChildren(element('h2',{catalog:'Catálogo',rooms:'Salas',outfits:'Outfits'}[r.kind]));
+   if(!r.items.length)box.append(element('p','O IMVU não devolveu resultados nesta consulta.','muted'));
+   for(const item of r.items){const row=element('div',undefined,'lookup-row');row.append(element('strong',item.name||item.id),element('span',[item.id,item.creator||item.ownerName,item.price!=null?item.price+' créditos':''].filter(Boolean).join(' · ')));if(item.url){const link=element('a','Abrir ↗','text-button');link.href=item.url;link.target='_blank';link.rel='noopener noreferrer';row.append(link);}box.append(row);}
+   box.append(element('p','Fonte: '+r.source+' · Até 20 resultados','muted small'));return;
+  }
   box.replaceChildren(element('h2',r.kind==='user'?r.displayName:r.name));
-  const rows=r.kind==='user'?[['Username',r.username],['CID',r.id],['Conta criada',r.created?new Date(r.created).toLocaleDateString('pt-PT'):null],['Descrição',r.tagline],['Creator',r.isCreator?'Sim':'Não'],['VIP',r.isVip==null?null:r.isVip?'Sim':'Não']]:[['ID',r.id],['Dono',r.ownerName],['CID do dono',r.ownerId],['Descrição',r.description],['Ocupação',r.occupancy==null?null:r.occupancy+' / '+(r.capacity??'—')],['Acesso',r.privacy],['Idioma',r.language],['AP',r.isAp==null?null:r.isAp?'Sim':'Não']];
+  const rows=r.kind==='user'?[['Username',r.username],['CID',r.id],['Conta criada',r.created?new Date(r.created).toLocaleDateString('pt-PT'):null],['Descrição',r.tagline],['Seguidores',r.followers??null],['A seguir',r.following??null],['Creator',r.isCreator?'Sim':'Não'],['VIP',r.isVip==null?null:r.isVip?'Sim':'Não']]:[['ID',r.id],['Dono',r.ownerName],['CID do dono',r.ownerId],['Descrição',r.description],['Ocupação',r.occupancy==null?null:r.occupancy+' / '+(r.capacity??'—')],['Acesso',r.privacy],['Idioma',r.language],['AP',r.isAp==null?null:r.isAp?'Sim':'Não']];
   for(const [label,value] of rows){const row=element('div',undefined,'lookup-row');row.append(element('strong',label),element('span',value??'Não disponibilizado'));box.append(row);}
   const link=element('a','Abrir no IMVU ↗','text-button');link.href=r.kind==='user'?r.profileUrl:r.roomUrl;link.target='_blank';link.rel='noopener noreferrer';box.append(link);
   if(r.kind==='room'){
@@ -115,3 +123,22 @@ $('lookup-form').onsubmit=async event=>{
   box.append(element('p','Fonte: '+r.source+' · '+new Date(r.fetchedAt).toLocaleTimeString('pt-PT')+' · Cache até 1 minuto','muted small'));
  }catch(e){box.replaceChildren(element('p',e.message,'error'));}finally{button.disabled=false;}
 };
+
+let activityRoomId=null,activityBusy=false;
+async function loadActivity(){
+ if(activityBusy)return;activityBusy=true;const button=$('activity-settings').querySelector('button');button.disabled=true;
+ try{
+  const status=await api('status');activityRoomId=status.roomId;$('activity-room').textContent='Sala: '+status.room+' · Últimos 100 resultados · Máximo 2 MB/dia';
+  const form=$('activity-search');const data=await api('activity',{action:'read',roomId:activityRoomId,kind:form.elements.kind.value,query:form.elements.query.value.trim()});
+  $('activity-settings').elements.enabled.checked=data.settings.enabled;const box=$('activity-results');box.replaceChildren();
+  if(!data.events.length)box.append(element('p','Sem registos para esta pesquisa. A recolha não recupera dados anteriores.','muted'));
+  const labels={message:'Mensagem',join:'Entrou',leave:'Saiu',baseline:'Observação iniciada'};
+  for(const e of data.events){const row=element('div',undefined,'activity-row');row.append(element('small',new Date(e.time).toLocaleString('pt-PT')+' · '+labels[e.type]+' · '+(e.name||e.userId||'')),element('p',e.text||''));box.append(row);}
+ }catch(e){notice(e.message,true);activityRoomId=null;}finally{activityBusy=false;button.disabled=!activityRoomId;}
+}
+$('activity-settings').onsubmit=async event=>{
+ event.preventDefault();if(!activityRoomId)return;const button=event.target.querySelector('button');button.disabled=true;
+ try{await api('activity',{action:'save',roomId:activityRoomId,enabled:event.target.elements.enabled.checked});notice('Configuração de histórico guardada.');await loadActivity();}catch(e){notice(e.message,true);}finally{button.disabled=false;}
+};
+$('activity-search').onsubmit=event=>{event.preventDefault();loadActivity();};
+$('activity-clear').onclick=async()=>{if(activityRoomId&&await confirmAction('Apagar o histórico desta sala?','Os registos guardados serão removidos. Se a recolha estiver ativa, novas mensagens continuam a ser guardadas.')){try{await api('activity',{action:'clear',roomId:activityRoomId});await loadActivity();}catch(e){notice(e.message,true);}}};

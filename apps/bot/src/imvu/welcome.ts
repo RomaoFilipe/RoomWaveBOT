@@ -1,3 +1,4 @@
+import {captureActivity,historyEnabled} from "./activity.js";
 import type {BrowserContext,Page} from 'playwright';
 import {readFile} from 'node:fs/promises';
 import {WelcomeTracker,renderWelcome,type Visitor} from './welcome-state.js';
@@ -5,6 +6,7 @@ import {WelcomeTracker,renderWelcome,type Visitor} from './welcome-state.js';
 // Use the authenticated IMVU session; no second browser and no DOM dependency.
 export function startWelcomes(context:BrowserContext,page:Page){
  const names=new Map<string,string>();
+ let previousVisitors:Map<string,string>|null=null;
  const tracker=new WelcomeTracker();let busy=false,stopped=false,wasEnabled=false,failures=0,baselineLogged=false;
  async function imvuJson(url:string){
   const response=await context.request.get(url,{timeout:7000});
@@ -15,14 +17,16 @@ export function startWelcomes(context:BrowserContext,page:Page){
   if(busy||stopped)return;busy=true;
   try{
    const connection=await page.evaluate('({connected:window.__roomwaveWsState?.socket?.readyState===1,self:window.__roomwaveWsState?.userId})') as {connected:boolean;self:string|null};
-   if(!connection.connected||!connection.self){tracker.reset();return;}
+   if(!connection.connected||!connection.self){tracker.reset();previousVisitors=null;return;}
    const key=(await readFile('/home/ubuntu/roomwave/.data/custom-commands.key','utf8')).trim();
    const res=await fetch(`${process.env.ROOMWAVE_API_URL??'http://127.0.0.1:3001'}/api/rooms/${process.env.ROOMWAVE_ROOM_ID}/welcome`,{headers:{'x-roomwave-bot-key':key},signal:AbortSignal.timeout(5000)});
    if(!res.ok)throw new Error('WELCOME_SETTINGS_UNAVAILABLE');
    const settings=await res.json() as {enabled:boolean;message:string;roomName:string};
    if(settings.enabled!==wasEnabled){tracker.reset();wasEnabled=settings.enabled;}
    // One initial read verifies the connection even when the feature is disabled.
-   if(!settings.enabled&&baselineLogged)return;
+   const logging=await historyEnabled();
+   if(!logging)previousVisitors=null;
+   if(!settings.enabled&&!logging&&baselineLogged)return;
    const url=`https://api.imvu.com/chat/chat-${process.env.IMVU_ROOM_ID}/participants`;
    const payload=await imvuJson(url);
    const collection=payload.denormalized?.[payload.id]?.data;
@@ -42,6 +46,14 @@ export function startWelcomes(context:BrowserContext,page:Page){
    }
    for(const id of names.keys())if(!visitors.some(v=>v.id===id))names.delete(id);
    if(!baselineLogged){console.log(`👋 Boas-vindas: lista de participantes confirmada (${visitors.length}); ${settings.enabled?'ativo':'desligado'}.`);baselineLogged=true;}
+   if(logging){
+    const current=new Map(visitors.map(v=>[v.id,v.name]));
+    if(previousVisitors){
+     for(const [id,name] of current)if(!previousVisitors.has(id))await captureActivity({type:'join',userId:id,name:name.slice(0,100)});
+     for(const [id,name] of previousVisitors)if(!current.has(id))await captureActivity({type:'leave',userId:id,name:name.slice(0,100)});
+    }else await captureActivity({type:'baseline',text:'Observação iniciada na sala do bot.'});
+    previousVisitors=current;
+   }
    const visitor=tracker.observe(visitors,String(connection.self),settings.enabled);
    failures=0;
    if(visitor&&!stopped){
@@ -49,7 +61,7 @@ export function startWelcomes(context:BrowserContext,page:Page){
     await page.evaluate(text=>(window as any).__roomwaveSendChat(text),message);
     console.log(`👋 Boas-vindas enviadas: IMVU=${visitor.id}`);
    }
-  }catch(error){tracker.reset();if(failures++%6===0)console.warn('⚠️ Boas-vindas:',error instanceof Error&&/^WELCOME_/.test(error.message)?error.message:'consulta temporariamente indisponível');}
+  }catch(error){tracker.reset();previousVisitors=null;if(failures++%6===0)console.warn('⚠️ Boas-vindas:',error instanceof Error&&/^WELCOME_/.test(error.message)?error.message:'consulta temporariamente indisponível');}
   finally{busy=false;}
  }
  const timer=setInterval(()=>void tick(),10000);timer.unref();void tick();
