@@ -1,3 +1,4 @@
+import {setPresenceReader} from "./presence.js";
 import {captureActivity,publicChat} from "./activity.js";
 import { startWelcomes } from "./welcome.js";
 import { applyActiveRoom, reportBotRoom } from "../../../../tools/room-runtime.mjs";
@@ -1123,6 +1124,18 @@ console.log(
 );
 console.log("");
 
+setPresenceReader(async (id) => {
+  const connected=await page.evaluate('Boolean(window.__roomwaveWsState?.socket?.readyState===1 && window.__roomwaveWsState?.chatId)');
+  if(!connected)throw new Error('PRESENCE_UNAVAILABLE');
+  const url=`https://api.imvu.com/chat/chat-${process.env.IMVU_ROOM_ID}/participants`;
+  const response=await context.request.get(url,{timeout:5000});
+  try{
+    if(!response.ok())throw new Error('PRESENCE_UNAVAILABLE');
+    const data=await response.json();const items=data.denormalized?.[data.id]?.data?.items;
+    if(!Array.isArray(items))throw new Error('PRESENCE_UNAVAILABLE');
+    return items.includes(`${url}/user-${id}`);
+  }finally{await response.dispose();}
+});
 activityReady = true;
 const stopWelcomes = startWelcomes(context, page);
 
@@ -1135,6 +1148,7 @@ async function stop() {
   clearInterval(roomHeartbeat);
   stopWelcomes();
   activityReady = false;
+  setPresenceReader(null);
   reportBotRoom("offline");
 
   console.log("");

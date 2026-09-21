@@ -1,3 +1,4 @@
+import {presenceCommand} from "./room-presence.js";
 import { manageCommand, customReply } from "./custom.js";
 import { rulesCommand, radioCommand, staffCommand } from "./room-info.js";
 import { volumeCommand } from "./volume.js";
@@ -67,6 +68,10 @@ export async function handleCommand(
   switch (
     command.toLowerCase()
   ) {
+    case "onde":
+    case "historico":
+      return presenceCommand(command.toLowerCase() as "onde"|"historico",args,context.imvuUserId);
+
     case "criarcomando":
     case "editarcomando":
     case "apagarcomando":

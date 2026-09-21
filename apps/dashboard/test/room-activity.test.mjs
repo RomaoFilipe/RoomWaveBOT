@@ -11,6 +11,9 @@ test('room history requires opt-in, isolates rooms, searches and clears records'
  await saveActivitySettings(a,true);
  await Promise.all([recordActivity(a,{type:'message',userId:'123',text:'hello test'}),recordActivity(a,{type:'join',userId:'123'})]);
  assert.equal((await readActivity(a,'HELLO','message')).length,1);
+ const named=await readActivity(a,'Diablo','message',{'123':'Diablo'});assert.equal(named.length,1);assert.equal(named[0].name,'Diablo');assert.equal(named[0].nameSource,'current');
+ assert.equal((await readActivity(a,'','history',{},'12')).length,0);
+ assert.equal((await readActivity(a,'','history',{},'123')).length,1);
  assert.equal((await readActivity(a,'123','history')).length,1);
  assert.equal((await readActivity(b)).length,0);
  await writeFile(new URL('2000-01-01.jsonl',dir),'{}\n');await purgeActivity();

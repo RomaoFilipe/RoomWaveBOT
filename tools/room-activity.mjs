@@ -13,12 +13,14 @@ export async function recordActivity(id,event){return serial(async()=>{
  await appendFile(path,JSON.stringify({...event,time:now.toISOString()})+'\n',{mode:0o600});return {stored:true};
 });}
 export async function clearActivity(id){return serial(async()=>{const dir=folder(id);for(const file of await readdir(dir).catch(()=>[]))if(file.endsWith('.jsonl'))await unlink(new URL(file,dir));return {ok:true};});}
-export async function readActivity(id,query='',kind='all'){
+export async function readActivity(id,query='',kind='all',names={},targetUserId=null){
  const dir=folder(id),cutoff=Date.now()-7*86400000;const output=[];
  for(const file of (await readdir(dir).catch(()=>[])).filter(f=>/^\d{4}-\d{2}-\d{2}\.jsonl$/.test(f)).sort().reverse()){
   if(Date.parse(file.slice(0,10))<cutoff)continue;
   const lines=(await readFile(new URL(file,dir),'utf8')).trim().split('\n').reverse();
   for(const line of lines){let event;try{event=JSON.parse(line);}catch{continue;}if(Date.parse(event.time)<cutoff)continue;
+   if(targetUserId&&event.userId!==targetUserId)continue;
+   if(!event.name&&event.userId&&names[event.userId])event={...event,name:names[event.userId],nameSource:'current'};
    if(kind==='message'&&event.type!=='message'||kind==='history'&&event.type==='message')continue;
    if(query&&!`${event.userId??''} ${event.name??''} ${event.text??''}`.toLowerCase().includes(query.toLowerCase()))continue;
    output.push(event);if(output.length>=100)return output;

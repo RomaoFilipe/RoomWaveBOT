@@ -51,3 +51,23 @@ pesquisa, eliminação, controlo OWNER e rejeição de gravação para sala inat
 Catálogo e perfil foram testados no browser real, incluindo viewport móvel.
 Recolha em produção fica desligada; a primeira entrada/mensagem real deve ser
 verificada após o dono ativar e informar os participantes.
+
+## Nomes e comandos de presença
+
+Novas mensagens recebem nome de apresentação e username quando a API IMVU
+responde; se falhar, usa-se o nome conhecido no RoomWave ou apenas o CID.
+Mensagens antigas sem nome podem apresentar o nome atual conhecido na sala,
+marcado como «nome atual», sem reescrever o registo original. A pesquisa por
+nome também inclui essa identificação. O CID permanece visível.
+
+Comandos exclusivos do dono (resposta pública no chat):
+
+- `!onde username/CID`: consulta agora os participantes da sala atual. Não
+  procura outras salas. Falha de consulta não é apresentada como ausência.
+- `!historico username/CID`: últimas três entradas/saídas observadas nesta sala,
+  em UTC, limitadas ao histórico disponível. Só corresponde ao CID exato;
+  observações antigas não são apresentadas como localização atual.
+
+Usar o username exato, não o nome de apresentação. A consulta de presença não
+precisa de ativar o histórico; o histórico precisa de recolha anteriormente
+ativada e não recupera visitas passadas.

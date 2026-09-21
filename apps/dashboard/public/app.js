@@ -133,7 +133,7 @@ async function loadActivity(){
   $('activity-settings').elements.enabled.checked=data.settings.enabled;const box=$('activity-results');box.replaceChildren();
   if(!data.events.length)box.append(element('p','Sem registos para esta pesquisa. A recolha não recupera dados anteriores.','muted'));
   const labels={message:'Mensagem',join:'Entrou',leave:'Saiu',baseline:'Observação iniciada'};
-  for(const e of data.events){const row=element('div',undefined,'activity-row');row.append(element('small',new Date(e.time).toLocaleString('pt-PT')+' · '+labels[e.type]+' · '+(e.name||e.userId||'')),element('p',e.text||''));box.append(row);}
+  for(const e of data.events){const row=element('div',undefined,'activity-row');row.append(element('small',new Date(e.time).toLocaleString('pt-PT')+' · '+labels[e.type]+' · '+(e.name?(e.name+' · CID '+e.userId+(e.nameSource==='current'?' (nome atual)':'')):(e.userId?'CID '+e.userId:''))),element('p',e.text||''));box.append(row);}
  }catch(e){notice(e.message,true);activityRoomId=null;}finally{activityBusy=false;button.disabled=!activityRoomId;}
 }
 $('activity-settings').onsubmit=async event=>{
