@@ -21,3 +21,24 @@ test('directory validates inputs, exact identities, public projection and cache'
  await assert.rejects(lookupUser('999'),/IMVU_RESTRICTED/);
  }finally{globalThis.fetch=original;}
 });
+test('Guest usernames resolve without prefix; unrelated and ambiguous results do not',async()=>{
+ const original=globalThis.fetch;
+ try{
+ globalThis.fetch=async url=>{
+  const u=new URL(url);
+  if(u.pathname==='/user'){
+   const query=u.searchParams.get('username');
+   const entries=query==='ambiguous'?[[41,'Guest_ambiguous'],[42,'GUEST_ambiguous']]:query==='unrelated'?[[43,'Guest_somebodyelse']]:[[44,'Guest_silly0134']];
+   const denormalized=Object.fromEntries(entries.map(([id,username])=>[`https://api.imvu.com/user/user-${id}`,{data:{username}}]));
+   denormalized[String(url)]={data:{items:entries.map(([id])=>`https://api.imvu.com/user/user-${id}`)}};
+   return Response.json({status:'success',id:String(url),denormalized});
+  }
+  assert.equal(u.pathname,'/user/user-44');
+  return Response.json({status:'success',denormalized:{[String(url)]:{data:{legacy_cid:44,username:'Guest_silly0134'}}}});
+ };
+ assert.equal((await lookupUser('silly0134')).username,'Guest_silly0134');
+ assert.equal((await lookupUser('Guest_silly0134')).id,'44');
+ await assert.rejects(lookupUser('unrelated'),/IMVU_NOT_FOUND/);
+ await assert.rejects(lookupUser('ambiguous'),/IMVU_NOT_FOUND/);
+ }finally{globalThis.fetch=original;}
+});

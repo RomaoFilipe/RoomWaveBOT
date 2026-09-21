@@ -27,7 +27,14 @@ export async function lookupUser(input){
  if(!/^\d+$/.test(query)){
   const data=await get('/user?username='+encodeURIComponent(query));
   const items=data.denormalized[data.id]?.data?.items;
-  const ref=Array.isArray(items)?items.find(ref=>String(data.denormalized[ref]?.data?.username).toLowerCase()===query.toLowerCase()):null;
+  const refs=Array.isArray(items)?items:[];
+  const username=ref=>String(data.denormalized[ref]?.data?.username??'').toLowerCase();
+  const exact=refs.filter(ref=>username(ref)===query.toLowerCase());
+  // IMVU accepts usernames without Guest_, but returns the canonical Guest_ name.
+  const canonical=value=>value.toLowerCase().replace(/^guest_/, '');
+  const matches=exact.length?exact:refs.filter(ref=>canonical(username(ref))===canonical(query));
+  const unique=[...new Set(matches)];
+  const ref=unique.length===1?unique[0]:null;
   id=typeof ref==='string'?/^https:\/\/api\.imvu\.com\/user\/user-(\d+)$/.exec(ref)?.[1]:null;
   if(!id)throw new Error('IMVU_NOT_FOUND');
  }
