@@ -42,7 +42,7 @@ export function createModerationHandler(deps:Dependencies){
     if(!deps.kick){await finish('FAILED','KICK_UNAVAILABLE');return '❌ Expulsão nativa indisponível.';}
     let result:KickResult;try{result=await deps.kick(actor.id,target.id);}catch{result='KICK_UNCONFIRMED';}
     const saved=await finish(result==='KICK_CONFIRMED'?'CONFIRMED':result==='KICK_UNCONFIRMED'?'UNCONFIRMED':'FAILED',result);
-    if(result==='KICK_CONFIRMED')return `✅ ${target.name} foi expulso desta sala. Motivo: ${match[2]!.trim()}${saved?'':' (Confirmação no histórico indisponível.)'}`;
+    if(result==='KICK_CONFIRMED')return `✅ ${target.name} foi expulso com sucesso desta sala. Motivo: ${match[2]!.trim()}${saved?'':' (Confirmação no histórico indisponível.)'}`;
     if(result==='KICK_UNCONFIRMED')return '⚠️ O resultado da expulsão não foi confirmado. Não repeti o pedido.';
     if(result==='TARGET_ABSENT')return messages.MODERATION_TARGET_ABSENT!;
     if(result==='ROOM_CHANGED')return messages.MODERATION_ROOM_CHANGED!;
