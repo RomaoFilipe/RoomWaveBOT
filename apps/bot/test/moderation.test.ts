@@ -21,8 +21,8 @@ test('warn confirmation, cooldown, native kick disabled, and IMVU moderators acc
  const f=fixture();assert.equal(await f.run('avisar','visitor respeita a sala',mod,true),null);
  assert.equal(f.records[0].operation,'start');assert.equal(f.records[1].status,'CONFIRMED');assert.equal(f.records[1].resultCode,'CHAT_ECHO');assert.equal(f.sent.length,1);
  assert.match((await f.run('avisar','visitor motivo',mod,true))!,/5 segundos/);assert.equal(f.sent.length,1);
- f.advance();assert.match((await f.run('expulsar','visitor motivo',mod,true))!,/não tem permissão/);assert.equal(f.sent.length,1);assert.equal(f.records.at(-1).resultCode,'KICK_UNAVAILABLE');
- const capable=fixture({authority:async()=>({ownerId:'1',moderators:['2','3']})});assert.match((await capable.run('expulsar','visitor motivo',owner,true))!,/ainda não foi validada/);assert.equal(capable.sent.length,0);
+ f.advance();assert.match((await f.run('expulsar','visitor motivo',mod,true))!,/não tem permissão/);assert.equal(f.sent.length,1);assert.equal(f.records.at(-1).resultCode,'KICK_PREFLIGHT_FAILED');
+ const capable=fixture({authority:async()=>({ownerId:'1',moderators:['2','3']})});assert.match((await capable.run('expulsar','visitor motivo',owner,true))!,/indisponível/);assert.equal(capable.sent.length,0);
 });
 test('timeouts, send failure, room changes, audit failure never claim success or resend',async()=>{
  for(const result of ['ECHO_TIMEOUT','SEND_FAILED','ROOM_CHANGED']){
@@ -41,4 +41,12 @@ test('authority parser uses exact room and complete moderator collection; malfor
  assert.deepEqual(await moderationAuthority('1-2',get),{ownerId:'1',moderators:['3']});
  await assert.rejects(()=>moderationAuthority('1-2',async()=>({})),/UNAVAILABLE/);
  await assert.rejects(()=>moderationAuthority('1-2',async(url:string)=>url===base?get(url):{denormalized:{[url]:{data:{items:[]},relations:{next:'more'}}}}),/UNAVAILABLE/);
+});
+test('native kick confirmation and uncertainty are audited truthfully',async()=>{
+ for(const result of ['KICK_CONFIRMED','KICK_UNCONFIRMED','KICK_REJECTED'] as const){
+  let kicks=0;const f=fixture({authority:async()=>({ownerId:'1',moderators:['2','3']}),kick:async(actor:string,target:string)=>{assert.equal(actor,'1');assert.equal(target,'4');kicks++;return result;}});
+  const reply=await f.run('expulsar','visitor motivo',owner,true);
+  assert.equal(kicks,1);assert.equal(f.records.at(-1).status,result==='KICK_CONFIRMED'?'CONFIRMED':result==='KICK_UNCONFIRMED'?'UNCONFIRMED':'FAILED');
+  assert.equal(reply!.includes('✅'),result==='KICK_CONFIRMED');assert.equal(f.sent.length,0);
+ }
 });

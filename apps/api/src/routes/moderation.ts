@@ -9,7 +9,7 @@ import {verifyOwnedRoom} from '../services/room-ownership.js';
 const cid=z.string().regex(/^\d{1,20}$/);
 const schema=z.discriminatedUnion('operation',[
  z.object({operation:z.literal('start'),id:z.string().uuid(),roomId:z.string().uuid(),actorCid:cid,actorName:z.string().min(1).max(100),targetCid:cid,targetName:z.string().min(1).max(100),reason:z.string().trim().min(1).max(200).regex(/^[^\r\n\x00-\x1f]+$/),action:z.enum(['WARN','KICK'])}),
- z.object({operation:z.literal('finish'),id:z.string().uuid(),roomId:z.string().uuid(),status:z.enum(['CONFIRMED','FAILED','UNCONFIRMED']),resultCode:z.enum(['CHAT_ECHO','SEND_FAILED','ECHO_TIMEOUT','ROOM_CHANGED','KICK_UNAVAILABLE','INTERRUPTED'])}),
+ z.object({operation:z.literal('finish'),id:z.string().uuid(),roomId:z.string().uuid(),status:z.enum(['CONFIRMED','FAILED','UNCONFIRMED']),resultCode:z.enum(['CHAT_ECHO','SEND_FAILED','ECHO_TIMEOUT','ROOM_CHANGED','KICK_UNAVAILABLE','INTERRUPTED','KICK_CONFIRMED','KICK_REJECTED','KICK_UNCONFIRMED','KICK_PREFLIGHT_FAILED','TARGET_ABSENT'])}),
  z.object({operation:z.literal('list'),roomId:z.string().uuid(),actorCid:cid,person:z.string().trim().max(100).optional(),action:z.enum(['WARN','KICK']).optional(),from:z.iso.datetime().optional(),to:z.iso.datetime().optional(),cursor:z.string().uuid().optional()}),
 ]);
 export async function purgeModeration(){
@@ -34,8 +34,8 @@ export async function moderationRoutes(app:FastifyInstance,options:{activeRoom?:
     return {events:rows.slice(0,50),nextCursor:rows.length>50?rows[49]!.id:null};
    }
    if(input.operation==='finish'){
-    if(input.status==='CONFIRMED'&&input.resultCode!=='CHAT_ECHO')return reply.code(400).send({error:'INVALID_MODERATION'});
-    const result=await prisma.moderationEvent.updateMany({where:{id:input.id,roomId:input.roomId,status:'REQUESTED',...(input.status==='CONFIRMED'?{action:'WARN' as const}:{})},data:{status:input.status,resultCode:input.resultCode}});
+    if(input.status==='CONFIRMED'&&!['CHAT_ECHO','KICK_CONFIRMED'].includes(input.resultCode))return reply.code(400).send({error:'INVALID_MODERATION'});
+    const result=await prisma.moderationEvent.updateMany({where:{id:input.id,roomId:input.roomId,status:'REQUESTED',...(input.status==='CONFIRMED'?{action:input.resultCode==='KICK_CONFIRMED'?'KICK' as const:'WARN' as const}:{})},data:{status:input.status,resultCode:input.resultCode}});
     return {updated:result.count};
    }
    if(starting)return reply.code(429).send({error:'MODERATION_BUSY'});starting=true;

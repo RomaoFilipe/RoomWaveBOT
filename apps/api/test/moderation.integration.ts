@@ -23,6 +23,10 @@ try{
  assert.equal((await call({operation:'finish',id:payload.id,status:'CONFIRMED',resultCode:'ECHO_TIMEOUT'})).statusCode,400);
  assert.equal((await call({operation:'finish',id:payload.id,status:'CONFIRMED',resultCode:'CHAT_ECHO'})).json().updated,1);
  assert.equal((await call({operation:'finish',id:payload.id,status:'FAILED',resultCode:'SEND_FAILED'})).json().updated,0);
+ const kickId=randomUUID();
+ await prisma.moderationEvent.create({data:{id:kickId,roomId:room.id,actorCid:cid,actorName:'Owner',targetCid:'44',targetName:'Visitor',reason:'Test kick',action:'KICK'}});
+ assert.equal((await call({operation:'finish',id:kickId,status:'CONFIRMED',resultCode:'CHAT_ECHO'})).json().updated,0);
+ assert.equal((await call({operation:'finish',id:kickId,status:'CONFIRMED',resultCode:'KICK_CONFIRMED'})).json().updated,1);
  const list=await call({operation:'list',actorCid:cid,person:'Visitor',action:'WARN'});assert.equal(list.statusCode,200,list.body);assert.equal(list.json().events.length,1);assert.equal(list.json().events[0].status,'CONFIRMED');
  assert.equal((await call({operation:'list',actorCid:cid,person:'Nobody'})).json().events.length,0);
  assert.equal((await call({operation:'list',actorCid:cid,from:'2026-01-02T00:00:00Z',to:'2026-01-01T00:00:00Z'})).statusCode,400);

@@ -3,8 +3,8 @@
 ## Comandos
 
 - `!avisar @username motivo` (ou CID): publica um aviso, apenas na sala atual.
-- `!expulsar @username motivo`: reservado e com verificação de permissões, mas
-  **indisponível até validar a integração nativa**. Não executa expulsões.
+- `!expulsar @username motivo` (ou CID): expulsão nativa, validada na conta de teste
+  explicitamente indicada pelo dono. Exige também permissão IMVU do bot.
 - `!help moderacao`: ajuda; `!comandos moderacao` é equivalente.
 
 Só dono e moderadores reais no IMVU podem ordenar ações. Os cargos locais do
@@ -39,17 +39,26 @@ arranque da API. As ações não dependem da opção de recolha de mensagens da 
 do gateway. O dashboard expõe apenas consulta e injeta a identidade autenticada.
 Não guarda cookies, credenciais nem respostas IMVU completas.
 
-## Estado da expulsão
+## Expulsão nativa validada
 
-Foram consultados os metadados reais de `/room/room-ID` e a coleção
-`/room/room-ID/moderators`. No bundle público do cliente IMVU
-`https://webasset-akm.imvu.com/asset/98eac403d6afd842/build/welcome/welcome.min.js`,
-o diálogo RemoveUserDialog chama `activeChat.bootFromChat(user)` após confirmação.
-Isso identifica a ação do cliente, mas não valida um endpoint, payload ou resposta
-que o gateway possa executar. Não foi inventada uma rota HTTP nem feito qualquer
-pedido destrutivo de teste. A expulsão permanece indisponível, conforme o plano.
-Para a ativar, é necessário validar o transporte nativo e testar com uma conta
-explicitamente designada para o teste, nunca com visitantes escolhidos pelo bot.
+O cliente autenticado IMVU, bundle
+`https://webasset-akm.imvu.com/asset/c0c70ab04c14dfe4/build/withme/withme.min.js`,
+implementa `bootFromChat` com DELETE na relação do participante e corpo JSON
+`{reason:"booted"}`. O UiCore Rest obtém `X-imvu-sauce` do recurso `/login/me`.
+
+O adaptador usa a sessão existente, confirma que pertence ao bot, revalida os
+cargos e a presença, e só remove a relação exata do destinatário na sala ativa.
+Cookies e sauce não são escritos nos logs. Redirecionamentos e repetições estão
+desativados. Não implementa a operação diferente de banlist usada nas Live Rooms.
+
+Só marca confirmado quando o DELETE recebe HTTP 2xx e uma consulta posterior
+confirma a ausência do participante. Timeout, resposta ambígua ou permanência na
+sala produzem «não confirmado». A saída isolada de alguém, sem resposta de sucesso
+ao DELETE, nunca é tratada como prova de expulsão.
+
+Em 21/09/2026 o dono indicou Guest_teste22221 (CID 391952406) como alvo de teste.
+Foi feito um único DELETE; resultado KICK_CONFIRMED, com auditoria
+`03193b95-a5e8-4604-ab07-8669c5cfb0c9`. Nenhum outro visitante foi usado.
 
 ## Implantação e testes
 
@@ -60,5 +69,6 @@ Reiniciar API, dashboard e gateway; o motor de áudio não precisa de reinício.
 - `node --import tsx apps/api/test/moderation.integration.ts`
 - Typecheck de bot e API; testes existentes do bot/dashboard.
 
-Os testes de integração criam e removem dados temporários. Nenhum teste envia
-avisos ou expulsa utilizadores do IMVU real.
+Os testes automatizados usam simulações e registos temporários, removidos no fim.
+A validação real separada foi limitada à conta indicada acima.
+Teste do adaptador: `node --import tsx apps/bot/test/native-kick.test.ts`.

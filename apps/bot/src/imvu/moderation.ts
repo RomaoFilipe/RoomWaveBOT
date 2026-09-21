@@ -1,3 +1,4 @@
+import {nativeKick,type KickResult} from "./native-kick.js";
 import {randomUUID} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import type {BrowserContext,Page} from 'playwright';
@@ -9,6 +10,7 @@ interface Actor {id:string;name:string}
 interface Dependencies {
  authority:()=>Promise<Authority>;target:(name:string)=>Promise<Actor>;present:(cid:string)=>Promise<boolean>;
  current:()=>Promise<boolean>;audit:(body:any)=>Promise<any>;send:(text:string)=>Promise<'CHAT_ECHO'|'SEND_FAILED'|'ECHO_TIMEOUT'|'ROOM_CHANGED'>;
+ kick?:(actor:string,target:string)=>Promise<KickResult>;
  roomId:string;botId:string;now:()=>number;
 }
 const messages:Record<string,string>={MODERATION_DENIED:'⛔ Só o dono e os moderadores reais desta sala no IMVU podem usar este comando.',MODERATION_PROTECTED:'⛔ Não posso atuar sobre o dono, moderadores, o próprio executor ou o bot.',MODERATION_ROOM_CHANGED:'❌ A sala ou ligação mudou. Ação cancelada.',MODERATION_TARGET_ABSENT:'❌ O destinatário não consta nesta sala.',MODERATION_COOLDOWN:'⏳ Espera 5 segundos entre ações de moderação.',MODERATION_BUSY:'⏳ Há uma ação de moderação em curso.',MODERATION_BOT_NOT_MODERATOR:'❌ O bot não tem permissão de moderador nesta sala no IMVU.'};
@@ -36,9 +38,15 @@ export function createModerationHandler(deps:Dependencies){
    await deps.audit({operation:'start',id,roomId:deps.roomId,actorCid:actor.id,actorName:actor.name.slice(0,100),targetCid:target.id,targetName:target.name.slice(0,100),reason:match[2]!.trim(),action});
    const finish=async(status:string,resultCode:string)=>{try{await deps.audit({operation:'finish',id,roomId:deps.roomId,status,resultCode});return true;}catch{console.error('MODERATION_AUDIT_FINISH_FAILED',id);return false;}};
    if(action==='KICK'){
-    await finish('FAILED','KICK_UNAVAILABLE');
-    try{checkModeration(authority,actor.id,target.id,deps.botId,'KICK');}catch{return messages.MODERATION_BOT_NOT_MODERATOR!;}
-    return '❌ Expulsão indisponível: a operação nativa do IMVU ainda não foi validada. Ninguém foi expulso.';
+    try{checkModeration(authority,actor.id,target.id,deps.botId,'KICK');}catch{await finish('FAILED','KICK_PREFLIGHT_FAILED');return messages.MODERATION_BOT_NOT_MODERATOR!;}
+    if(!deps.kick){await finish('FAILED','KICK_UNAVAILABLE');return '❌ Expulsão nativa indisponível.';}
+    let result:KickResult;try{result=await deps.kick(actor.id,target.id);}catch{result='KICK_UNCONFIRMED';}
+    const saved=await finish(result==='KICK_CONFIRMED'?'CONFIRMED':result==='KICK_UNCONFIRMED'?'UNCONFIRMED':'FAILED',result);
+    if(result==='KICK_CONFIRMED')return `✅ ${target.name} foi expulso desta sala. Motivo: ${match[2]!.trim()}${saved?'':' (Confirmação no histórico indisponível.)'}`;
+    if(result==='KICK_UNCONFIRMED')return '⚠️ O resultado da expulsão não foi confirmado. Não repeti o pedido.';
+    if(result==='TARGET_ABSENT')return messages.MODERATION_TARGET_ABSENT!;
+    if(result==='ROOM_CHANGED')return messages.MODERATION_ROOM_CHANGED!;
+    return result==='KICK_REJECTED'?'❌ O IMVU recusou a expulsão.':'❌ Não foi possível validar permissões, presença ou sessão. Expulsão cancelada.';
    }
    if(!await deps.current()){await finish('FAILED','ROOM_CHANGED');return messages.MODERATION_ROOM_CHANGED!;}
    const text=`⚠️ ${target.name}: ${match[2]!.trim()}\nModeração: ${actor.name} · Ref. ${id.slice(0,8)}`;
@@ -60,6 +68,7 @@ export function installModeration(context:BrowserContext,page:Page){
  const roomId=process.env.ROOMWAVE_ROOM_ID!,imvuRoom=process.env.IMVU_ROOM_ID!,botId=process.env.IMVU_BOT_USER_ID!;
  const current=async()=>readActiveRoom()?.roomId===roomId&&await page.evaluate((expected)=>{const s=(window as any).__roomwaveWsState;return s?.socket?.readyState===1&&Boolean(s.chatId)&&location.href.includes(expected);},imvuRoom);
  handler=createModerationHandler({roomId,botId,now:Date.now,current,present:isInCurrentRoom,
+  kick:(actor,target)=>nativeKick(context.request,imvuRoom,actor,target,botId,current),
   authority:()=>moderationAuthority(imvuRoom,async url=>{const r=await context.request.get(url,{timeout:5000,maxRedirects:0});try{if(!r.ok())throw new Error('MODERATION_AUTHORITY_UNAVAILABLE');return await r.json();}finally{await r.dispose();}}),
   target:async name=>{const u=await lookupUser(name);return {id:u.id,name:u.username};},
   audit:async body=>{const key=(await readFile('/home/ubuntu/roomwave/.data/custom-commands.key','utf8')).trim();const r=await fetch(`${process.env.ROOMWAVE_API_URL??'http://127.0.0.1:3001'}/api/moderation`,{method:'POST',headers:{'Content-Type':'application/json','x-roomwave-bot-key':key},body:JSON.stringify(body),signal:AbortSignal.timeout(12000)});const data=await r.json();if(!r.ok)throw new Error(data.error??'MODERATION_UNAVAILABLE');if(body.operation==='finish'&&data.updated!==1)throw new Error('MODERATION_AUDIT_NOT_UPDATED');return data;},
