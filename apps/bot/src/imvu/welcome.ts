@@ -47,6 +47,8 @@ export function startWelcomes(context:BrowserContext,page:Page){
    for(const id of names.keys())if(!visitors.some(v=>v.id===id))names.delete(id);
    if(!baselineLogged){console.log(`👋 Boas-vindas: lista de participantes confirmada (${visitors.length}); ${settings.enabled?'ativo':'desligado'}.`);baselineLogged=true;}
    if(logging){
+    await fetch(`${process.env.ROOMWAVE_API_URL??'http://127.0.0.1:3001'}/api/security`,{method:'POST',headers:{'Content-Type':'application/json','x-roomwave-bot-key':key},body:JSON.stringify({action:'snapshot',roomId:process.env.ROOMWAVE_ROOM_ID,participants:visitors.map(v=>({id:v.id,name:v.name.slice(0,100)}))}),signal:AbortSignal.timeout(5000)});
+
     const current=new Map(visitors.map(v=>[v.id,v.name]));
     if(previousVisitors){
      for(const [id,name] of current)if(!previousVisitors.has(id))await captureActivity({type:'join',userId:id,name:name.slice(0,100)});

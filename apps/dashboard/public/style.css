@@ -12,3 +12,5 @@
 .lookup-row{display:grid;grid-template-columns:130px 1fr;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);font-size:13px;overflow-wrap:anywhere}.lookup-row strong{color:var(--muted)}#lookup-result>a,#lookup-result>button{display:inline-block;margin:20px 15px 20px 0}
 
 #activity-settings{margin:20px 0}#activity-settings input[type=checkbox]{width:auto}.activity-row{padding:12px 0;border-bottom:1px solid var(--line)}.activity-row small{color:var(--muted)}.activity-row p{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:8px}#activity-search .form-foot{flex-wrap:wrap}
+
+.security-highlight{background:#fff3cc;border-left:3px solid #b78813;padding:12px}.security-highlight strong{display:block}#security-monitor{margin:18px 0}#security-monitor input[type=checkbox],#security-highlight-only{width:auto}#security-detail .command-grid{align-items:start}

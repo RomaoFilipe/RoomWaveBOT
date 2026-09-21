@@ -5,7 +5,7 @@ let queue=Promise.resolve();
 function folder(id){if(!/^[a-f0-9-]{36}$/i.test(id))throw new Error('INVALID_ROOM');return new URL(id+'/',root);}
 async function serial(fn){const task=queue.then(fn);queue=task.catch(()=>{});return task;}
 export async function activitySettings(id){try{return JSON.parse(await readFile(new URL('settings.json',folder(id)),'utf8'));}catch(e){if(e.code==='ENOENT')return {enabled:false};throw e;}}
-export async function saveActivitySettings(id,enabled){return serial(async()=>{const dir=folder(id);await mkdir(dir,{recursive:true,mode:0o700});const temp=new URL(randomUUID()+'.tmp',dir);await writeFile(temp,JSON.stringify({enabled}),{mode:0o600});await rename(temp,new URL('settings.json',dir));return {enabled};});}
+export async function saveActivitySettings(id,enabled,ownerImvuId){return serial(async()=>{const dir=folder(id);await mkdir(dir,{recursive:true,mode:0o700});const temp=new URL(randomUUID()+'.tmp',dir);await writeFile(temp,JSON.stringify({enabled,...(ownerImvuId?{ownerImvuId}:{})}),{mode:0o600});await rename(temp,new URL('settings.json',dir));return {enabled};});}
 export async function recordActivity(id,event){return serial(async()=>{
  if(!(await activitySettings(id)).enabled)return {stored:false};
  const dir=folder(id);await mkdir(dir,{recursive:true,mode:0o700});const now=new Date(),path=new URL(now.toISOString().slice(0,10)+'.jsonl',dir);

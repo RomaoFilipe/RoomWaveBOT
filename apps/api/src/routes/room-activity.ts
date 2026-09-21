@@ -1,3 +1,4 @@
+import {verifyOwnedRoom,verifyRecordingRoom} from "../services/room-ownership.js";
 import {lookupUser} from "../../../../tools/imvu-directory.mjs";
 import type {FastifyInstance} from 'fastify';
 import {readFile} from 'node:fs/promises';
@@ -17,7 +18,9 @@ export async function roomActivityRoutes(app:FastifyInstance){
  const input=parsed.data;
  if(input.action==='record'){
   if(readActiveRoom()?.roomId!==roomId||!input.event)return reply.code(400).send({error:'INVALID_ROOM'});
-  if(!(await activitySettings(roomId)).enabled)return {stored:false};
+  const settings=await activitySettings(roomId);
+  if(!settings.enabled)return {stored:false};
+  try{await verifyRecordingRoom(roomId,settings.ownerImvuId);}catch{return reply.code(403).send({error:'IMVU_OWNERSHIP_REQUIRED'});}
   if(input.event.userId&&!input.event.name){
    try{const user=await lookupUser(input.event.userId);input.event.name=(user.displayName===user.username?user.username:`${user.displayName} (@${user.username})`).slice(0,100);}
    catch{const user=await prisma.user.findUnique({where:{imvuUserId:input.event.userId},select:{username:true}});if(user)input.event.name=user.username.slice(0,100);}
@@ -25,9 +28,14 @@ export async function roomActivityRoutes(app:FastifyInstance){
   return recordActivity(roomId,input.event);
  }
  if(!input.imvuUserId||!await prisma.roomMember.findFirst({where:{roomId,role:'OWNER',user:{is:{imvuUserId:input.imvuUserId}}}}))return reply.code(403).send({error:'OWNER_ONLY'});
- if(input.action==='save'){if(typeof input.enabled!=='boolean')return reply.code(400).send({error:'INVALID_QUERY'});return saveActivitySettings(roomId,input.enabled);}
+ if(input.action==='save'){
+  if(typeof input.enabled!=='boolean')return reply.code(400).send({error:'INVALID_QUERY'});
+  if(input.enabled)try{await verifyOwnedRoom(roomId,input.imvuUserId);}catch{return reply.code(403).send({error:'IMVU_OWNERSHIP_REQUIRED'});}
+  return saveActivitySettings(roomId,input.enabled,input.imvuUserId);
+ }
  if(input.action==='clear')return clearActivity(roomId);
  if(input.action==='settings')return activitySettings(roomId);
+ try{await verifyOwnedRoom(roomId,input.imvuUserId);}catch{return reply.code(403).send({error:'IMVU_OWNERSHIP_REQUIRED'});}
  const members=await prisma.roomMember.findMany({where:{roomId},select:{user:{select:{imvuUserId:true,username:true}}}});
  const names=Object.fromEntries(members.filter(m=>m.user.imvuUserId).map(m=>[m.user.imvuUserId!,m.user.username]));
  return {settings:await activitySettings(roomId),events:await readActivity(roomId,input.query,input.kind,names,input.targetUserId),roomId};

@@ -96,6 +96,11 @@ const server=createServer(async(req,res)=>{
     if(!token||!sessions.has(token)||sessions.get(token)<Date.now())return json(res,401,{error:'LOGIN_REQUIRED'});
     if(req.method==='POST'&&path==='/dashboard/api/logout'){sessions.delete(token);res.setHeader('Set-Cookie','rw_session=; Path=/dashboard; HttpOnly; Secure; SameSite=Strict; Max-Age=0');return json(res,200,{ok:true});}
     const actor=await owner(); // Recheck OWNER before every privileged request.
+    if(req.method==='POST'&&path==='/dashboard/api/security'){
+      const input=await body(req);
+      if(!['rooms','register','monitor','view','watch','unwatch'].includes(input.action))return json(res,400,{error:'INVALID_ACTION'});
+      return json(res,200,await request(api,'/api/security',{action:input.action,roomId:input.roomId,query:input.query,note:input.note,enabled:input.enabled,managementRoomId,imvuUserId:actor.imvuUserId}));
+    }
     if(req.method==='POST'&&path==='/dashboard/api/activity'){
       const input=await body(req);
       if(!['read','save','clear'].includes(input.action))return json(res,400,{error:'INVALID_ACTION'});
@@ -179,7 +184,7 @@ const server=createServer(async(req,res)=>{
     }
     return json(res,404,{error:'NOT_FOUND'});
   }catch(error){
-    const allowed=['ANKH_UNAVAILABLE','ANKH_UPSTREAM_ERROR','ANKH_BUSY','IMVU_NOT_FOUND','IMVU_RESTRICTED','IMVU_RATE_LIMIT','IMVU_UNAVAILABLE','INVALID_IMVU_USER','INVALID_WELCOME','OWNER_ONLY','INVALID_ROOM','INVALID_IMVU_ROOM','ROOM_NOT_OWNED','ROOM_ALREADY_EXISTS','ROOM_SWITCH_IN_PROGRESS','OWNER_NOT_CONFIGURED','INVALID_QUERY','INVALID_POSITION','INVALID_VOLUME','RESERVED_OR_INVALID_NAME','ALREADY_EXISTS','NOT_FOUND','RESPONSE_REQUIRED','INVALID_COMMAND','NO_TRACK_PLAYING','QUEUE_EMPTY','PLAYBACK_NOT_READY'];
+    const allowed=['IMVU_OWNER_MISMATCH','IMVU_OWNERSHIP_REQUIRED','WATCH_LIMIT','ANKH_UNAVAILABLE','ANKH_UPSTREAM_ERROR','ANKH_BUSY','IMVU_NOT_FOUND','IMVU_RESTRICTED','IMVU_RATE_LIMIT','IMVU_UNAVAILABLE','INVALID_IMVU_USER','INVALID_WELCOME','OWNER_ONLY','INVALID_ROOM','INVALID_IMVU_ROOM','ROOM_NOT_OWNED','ROOM_ALREADY_EXISTS','ROOM_SWITCH_IN_PROGRESS','OWNER_NOT_CONFIGURED','INVALID_QUERY','INVALID_POSITION','INVALID_VOLUME','RESERVED_OR_INVALID_NAME','ALREADY_EXISTS','NOT_FOUND','RESPONSE_REQUIRED','INVALID_COMMAND','NO_TRACK_PLAYING','QUEUE_EMPTY','PLAYBACK_NOT_READY'];
     const code=allowed.includes(error.message)?error.message:'SERVICE_UNAVAILABLE';
     console.error('Dashboard request failed:',code);
     return json(res,code==='SERVICE_UNAVAILABLE'?503:400,{error:code});
