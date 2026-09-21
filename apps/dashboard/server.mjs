@@ -98,7 +98,7 @@ const server=createServer(async(req,res)=>{
     const actor=await owner(); // Recheck OWNER before every privileged request.
     if(req.method==='POST'&&path==='/dashboard/api/imvu/lookup'){
       const input=await body(req);
-      return json(res,200,await request(api,'/api/imvu/lookup',{kind:input.kind,query:input.query,roomId:managementRoomId,imvuUserId:actor.imvuUserId}));
+      return json(res,200,await request(api,'/api/imvu/lookup',{kind:input.kind,provider:input.provider,query:input.query,roomId:managementRoomId,imvuUserId:actor.imvuUserId}));
     }
     if(path==='/dashboard/api/welcome'){
       if(req.method==='GET')return json(res,200,{...await request(api,root+'/welcome'),roomId});
@@ -173,7 +173,7 @@ const server=createServer(async(req,res)=>{
     }
     return json(res,404,{error:'NOT_FOUND'});
   }catch(error){
-    const allowed=['IMVU_NOT_FOUND','IMVU_RESTRICTED','IMVU_RATE_LIMIT','IMVU_UNAVAILABLE','INVALID_IMVU_USER','INVALID_WELCOME','OWNER_ONLY','INVALID_ROOM','INVALID_IMVU_ROOM','ROOM_NOT_OWNED','ROOM_ALREADY_EXISTS','ROOM_SWITCH_IN_PROGRESS','OWNER_NOT_CONFIGURED','INVALID_QUERY','INVALID_POSITION','INVALID_VOLUME','RESERVED_OR_INVALID_NAME','ALREADY_EXISTS','NOT_FOUND','RESPONSE_REQUIRED','INVALID_COMMAND','NO_TRACK_PLAYING','QUEUE_EMPTY','PLAYBACK_NOT_READY'];
+    const allowed=['ANKH_UNAVAILABLE','ANKH_UPSTREAM_ERROR','ANKH_BUSY','IMVU_NOT_FOUND','IMVU_RESTRICTED','IMVU_RATE_LIMIT','IMVU_UNAVAILABLE','INVALID_IMVU_USER','INVALID_WELCOME','OWNER_ONLY','INVALID_ROOM','INVALID_IMVU_ROOM','ROOM_NOT_OWNED','ROOM_ALREADY_EXISTS','ROOM_SWITCH_IN_PROGRESS','OWNER_NOT_CONFIGURED','INVALID_QUERY','INVALID_POSITION','INVALID_VOLUME','RESERVED_OR_INVALID_NAME','ALREADY_EXISTS','NOT_FOUND','RESPONSE_REQUIRED','INVALID_COMMAND','NO_TRACK_PLAYING','QUEUE_EMPTY','PLAYBACK_NOT_READY'];
     const code=allowed.includes(error.message)?error.message:'SERVICE_UNAVAILABLE';
     console.error('Dashboard request failed:',code);
     return json(res,code==='SERVICE_UNAVAILABLE'?503:400,{error:code});

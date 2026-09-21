@@ -27,9 +27,10 @@ na conta IMVU. Usa leitura pública sem partilhar a sessão do bot.
 - https://github.com/Yucked/Ankh/blob/main/Ankh.Backend/Controllers/InfoController.cs
 - https://github.com/imckvu/tool
 
-Ankh foi analisado como referência, não instalado ou apresentado como backend
-ativo. O código consultado usa .NET 8, RavenDB e a consulta de sala utiliza uma
-sessão guardada. Não é necessário executar estes serviços para esta pesquisa.
+A pesquisa agora permite também escolher **Ankh**, através de um host C# local
+que executa a biblioteca real do projeto. Ver [instalação e limites](ankh.md).
+A fonte IMVU direta continua disponível. O backend completo Ankh.Backend,
+com RavenDB e workers, não está instalado.
 A integração IMQ do bot atual mantém-se; não houve migração para outro wrapper.
 
 ## Testes

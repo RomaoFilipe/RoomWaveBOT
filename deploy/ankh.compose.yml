@@ -1,0 +1,23 @@
+services:
+  ankh:
+    image: roomwave-ankh:local
+    container_name: roomwave-ankh
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3250:8080"
+    mem_limit: 256m
+    memswap_limit: 384m
+    cpus: 0.5
+    pids_limit: 128
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
