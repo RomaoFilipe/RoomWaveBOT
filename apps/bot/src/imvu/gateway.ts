@@ -302,6 +302,8 @@ await page.exposeFunction(
           {
             imvuUserId:
               message.userId,
+            username: identity.user.username,
+            role,
           },
         );
 

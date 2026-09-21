@@ -1,3 +1,4 @@
+import {funCommand, funCommands} from "./fun.js";
 import {presenceCommand} from "./room-presence.js";
 import { manageCommand, customReply } from "./custom.js";
 import { rulesCommand, radioCommand, staffCommand } from "./room-info.js";
@@ -32,6 +33,8 @@ import {
 
 export interface CommandContext {
   imvuUserId?: string;
+  username?: string;
+  role?: string;
 }
 
 export async function handleCommand(
@@ -64,6 +67,19 @@ export async function handleCommand(
       : input.slice(
           firstSpace + 1,
         );
+
+  if (funCommands.has(command.toLowerCase())) {
+    if (!context.imvuUserId) return "❌ Não consegui identificar quem enviou o comando.";
+    try {
+      return await funCommand(process.env.ROOMWAVE_ROOM_ID ?? '', command.toLowerCase(), args, {id:context.imvuUserId,name:context.username ?? context.imvuUserId,role:context.role});
+    } catch (error) {
+      const code=error instanceof Error?error.message:'';
+      if(code==='GAME_TARGET_ABSENT')return '❌ Essa pessoa não consta nesta sala agora.';
+      if(code==='GAME_BOT_TARGET')return '🤖 Escolhe uma pessoa da sala, em vez do bot.';
+      if(/^(INVALID_IMVU_USER|IMVU_NOT_FOUND)$/.test(code))return '❌ Utilizador não encontrado. Usa o username exato ou CID.';
+      throw error;
+    }
+  }
 
   switch (
     command.toLowerCase()
@@ -120,7 +136,7 @@ export async function handleCommand(
 
     case "comandos":
     case "help":
-      return helpCommand();
+      return helpCommand(args);
 
     default:
       return customReply(command);
