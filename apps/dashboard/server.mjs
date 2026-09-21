@@ -96,6 +96,14 @@ const server=createServer(async(req,res)=>{
     if(!token||!sessions.has(token)||sessions.get(token)<Date.now())return json(res,401,{error:'LOGIN_REQUIRED'});
     if(req.method==='POST'&&path==='/dashboard/api/logout'){sessions.delete(token);res.setHeader('Set-Cookie','rw_session=; Path=/dashboard; HttpOnly; Secure; SameSite=Strict; Max-Age=0');return json(res,200,{ok:true});}
     const actor=await owner(); // Recheck OWNER before every privileged request.
+    if(path==='/dashboard/api/welcome'){
+      if(req.method==='GET')return json(res,200,{...await request(api,root+'/welcome'),roomId});
+      if(busy||rooms.controller.switching)return json(res,409,{error:'ROOM_SWITCH_IN_PROGRESS'});
+      const input=await body(req);
+      if(input.roomId!==roomId)return json(res,409,{error:'ROOM_SWITCH_IN_PROGRESS'});
+      busy=true;
+      try{return json(res,200,await request(api,root+'/welcome',{enabled:input.enabled,message:input.message,imvuUserId:actor.imvuUserId}));}finally{busy=false;}
+    }
     if(req.method==='GET'&&path==='/dashboard/api/rooms'){
       const saved=await rooms.managed({action:'list'});
       return json(res,200,{...saved,active:rooms.controller.active,operation:rooms.controller.operation,connection:await rooms.botStatus()});
@@ -161,7 +169,7 @@ const server=createServer(async(req,res)=>{
     }
     return json(res,404,{error:'NOT_FOUND'});
   }catch(error){
-    const allowed=['INVALID_ROOM','INVALID_IMVU_ROOM','ROOM_NOT_OWNED','ROOM_ALREADY_EXISTS','ROOM_SWITCH_IN_PROGRESS','OWNER_NOT_CONFIGURED','INVALID_QUERY','INVALID_POSITION','INVALID_VOLUME','RESERVED_OR_INVALID_NAME','ALREADY_EXISTS','NOT_FOUND','RESPONSE_REQUIRED','INVALID_COMMAND','NO_TRACK_PLAYING','QUEUE_EMPTY','PLAYBACK_NOT_READY'];
+    const allowed=['INVALID_WELCOME','OWNER_ONLY','INVALID_ROOM','INVALID_IMVU_ROOM','ROOM_NOT_OWNED','ROOM_ALREADY_EXISTS','ROOM_SWITCH_IN_PROGRESS','OWNER_NOT_CONFIGURED','INVALID_QUERY','INVALID_POSITION','INVALID_VOLUME','RESERVED_OR_INVALID_NAME','ALREADY_EXISTS','NOT_FOUND','RESPONSE_REQUIRED','INVALID_COMMAND','NO_TRACK_PLAYING','QUEUE_EMPTY','PLAYBACK_NOT_READY'];
     const code=allowed.includes(error.message)?error.message:'SERVICE_UNAVAILABLE';
     console.error('Dashboard request failed:',code);
     return json(res,code==='SERVICE_UNAVAILABLE'?503:400,{error:code});

@@ -1,3 +1,4 @@
+import { startWelcomes } from "./welcome.js";
 import { applyActiveRoom, reportBotRoom } from "../../../../tools/room-runtime.mjs";
 import { config } from "dotenv";
 import { fileURLToPath } from "node:url";
@@ -1115,6 +1116,8 @@ console.log(
 );
 console.log("");
 
+const stopWelcomes = startWelcomes(context, page);
+
 let stopping = false;
 
 async function stop() {
@@ -1122,6 +1125,7 @@ async function stop() {
 
   stopping = true;
   clearInterval(roomHeartbeat);
+  stopWelcomes();
   reportBotRoom("offline");
 
   console.log("");
