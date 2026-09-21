@@ -1,3 +1,4 @@
+import { imvuDirectoryRoutes } from "./routes/imvu-directory.js";
 import { welcomeRoutes } from "./routes/welcome.js";
 import { managedRoomsRoutes } from "./routes/managed-rooms.js";
 import { customCommandsRoutes } from "./routes/custom-commands.js";
@@ -59,6 +60,8 @@ await app.register(customCommandsRoutes, { prefix: "/api" });
 await app.register(managedRoomsRoutes, { prefix: "/api" });
 
 await app.register(welcomeRoutes, { prefix: "/api" });
+
+await app.register(imvuDirectoryRoutes, { prefix: "/api" });
 
 const port = Number(process.env.API_PORT ?? 3001);
 const host = process.env.API_HOST ?? "0.0.0.0";

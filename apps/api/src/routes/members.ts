@@ -1,3 +1,4 @@
+import { lookupUser } from "../../../../tools/imvu-directory.mjs";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
@@ -157,13 +158,18 @@ export async function membersRoutes(
           },
         });
 
+      let resolvedName: string | null = null;
+      if (!user || user.username === `IMVU-${imvuUserId}`) {
+        try { resolvedName = (await lookupUser(imvuUserId)).username; } catch { /* Keep commands available when IMVU is unavailable. */ }
+      }
+      if (user && resolvedName) user = await prisma.user.update({where:{id:user.id},data:{username:resolvedName}});
       if (!user) {
         user =
           await prisma.user.create({
             data: {
               imvuUserId,
               username:
-                `IMVU-${imvuUserId}`,
+                resolvedName ?? `IMVU-${imvuUserId}`,
             },
           });
       }
