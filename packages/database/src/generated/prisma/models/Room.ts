@@ -240,6 +240,7 @@ export type RoomWhereInput = {
   status?: Prisma.EnumRoomStatusFilter<"Room"> | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFilter<"Room"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Room"> | Date | string
+  moderationEvents?: Prisma.ModerationEventListRelationFilter
   customCommands?: Prisma.CustomCommandListRelationFilter
   members?: Prisma.RoomMemberListRelationFilter
   djs?: Prisma.DjAssignmentListRelationFilter
@@ -257,6 +258,7 @@ export type RoomOrderByWithRelationInput = {
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  moderationEvents?: Prisma.ModerationEventOrderByRelationAggregateInput
   customCommands?: Prisma.CustomCommandOrderByRelationAggregateInput
   members?: Prisma.RoomMemberOrderByRelationAggregateInput
   djs?: Prisma.DjAssignmentOrderByRelationAggregateInput
@@ -277,6 +279,7 @@ export type RoomWhereUniqueInput = Prisma.AtLeast<{
   status?: Prisma.EnumRoomStatusFilter<"Room"> | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFilter<"Room"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Room"> | Date | string
+  moderationEvents?: Prisma.ModerationEventListRelationFilter
   customCommands?: Prisma.CustomCommandListRelationFilter
   members?: Prisma.RoomMemberListRelationFilter
   djs?: Prisma.DjAssignmentListRelationFilter
@@ -324,6 +327,7 @@ export type RoomCreateInput = {
   status?: $Enums.RoomStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  moderationEvents?: Prisma.ModerationEventCreateNestedManyWithoutRoomInput
   customCommands?: Prisma.CustomCommandCreateNestedManyWithoutRoomInput
   members?: Prisma.RoomMemberCreateNestedManyWithoutRoomInput
   djs?: Prisma.DjAssignmentCreateNestedManyWithoutRoomInput
@@ -341,6 +345,7 @@ export type RoomUncheckedCreateInput = {
   status?: $Enums.RoomStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  moderationEvents?: Prisma.ModerationEventUncheckedCreateNestedManyWithoutRoomInput
   customCommands?: Prisma.CustomCommandUncheckedCreateNestedManyWithoutRoomInput
   members?: Prisma.RoomMemberUncheckedCreateNestedManyWithoutRoomInput
   djs?: Prisma.DjAssignmentUncheckedCreateNestedManyWithoutRoomInput
@@ -358,6 +363,7 @@ export type RoomUpdateInput = {
   status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  moderationEvents?: Prisma.ModerationEventUpdateManyWithoutRoomNestedInput
   customCommands?: Prisma.CustomCommandUpdateManyWithoutRoomNestedInput
   members?: Prisma.RoomMemberUpdateManyWithoutRoomNestedInput
   djs?: Prisma.DjAssignmentUpdateManyWithoutRoomNestedInput
@@ -375,6 +381,7 @@ export type RoomUncheckedUpdateInput = {
   status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  moderationEvents?: Prisma.ModerationEventUncheckedUpdateManyWithoutRoomNestedInput
   customCommands?: Prisma.CustomCommandUncheckedUpdateManyWithoutRoomNestedInput
   members?: Prisma.RoomMemberUncheckedUpdateManyWithoutRoomNestedInput
   djs?: Prisma.DjAssignmentUncheckedUpdateManyWithoutRoomNestedInput
@@ -558,6 +565,20 @@ export type RoomUpdateOneRequiredWithoutCustomCommandsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.RoomUpdateToOneWithWhereWithoutCustomCommandsInput, Prisma.RoomUpdateWithoutCustomCommandsInput>, Prisma.RoomUncheckedUpdateWithoutCustomCommandsInput>
 }
 
+export type RoomCreateNestedOneWithoutModerationEventsInput = {
+  create?: Prisma.XOR<Prisma.RoomCreateWithoutModerationEventsInput, Prisma.RoomUncheckedCreateWithoutModerationEventsInput>
+  connectOrCreate?: Prisma.RoomCreateOrConnectWithoutModerationEventsInput
+  connect?: Prisma.RoomWhereUniqueInput
+}
+
+export type RoomUpdateOneRequiredWithoutModerationEventsNestedInput = {
+  create?: Prisma.XOR<Prisma.RoomCreateWithoutModerationEventsInput, Prisma.RoomUncheckedCreateWithoutModerationEventsInput>
+  connectOrCreate?: Prisma.RoomCreateOrConnectWithoutModerationEventsInput
+  upsert?: Prisma.RoomUpsertWithoutModerationEventsInput
+  connect?: Prisma.RoomWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.RoomUpdateToOneWithWhereWithoutModerationEventsInput, Prisma.RoomUpdateWithoutModerationEventsInput>, Prisma.RoomUncheckedUpdateWithoutModerationEventsInput>
+}
+
 export type RoomCreateWithoutMembersInput = {
   id?: string
   name: string
@@ -567,6 +588,7 @@ export type RoomCreateWithoutMembersInput = {
   status?: $Enums.RoomStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  moderationEvents?: Prisma.ModerationEventCreateNestedManyWithoutRoomInput
   customCommands?: Prisma.CustomCommandCreateNestedManyWithoutRoomInput
   djs?: Prisma.DjAssignmentCreateNestedManyWithoutRoomInput
   requests?: Prisma.MusicRequestCreateNestedManyWithoutRoomInput
@@ -583,6 +605,7 @@ export type RoomUncheckedCreateWithoutMembersInput = {
   status?: $Enums.RoomStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  moderationEvents?: Prisma.ModerationEventUncheckedCreateNestedManyWithoutRoomInput
   customCommands?: Prisma.CustomCommandUncheckedCreateNestedManyWithoutRoomInput
   djs?: Prisma.DjAssignmentUncheckedCreateNestedManyWithoutRoomInput
   requests?: Prisma.MusicRequestUncheckedCreateNestedManyWithoutRoomInput
@@ -615,6 +638,7 @@ export type RoomUpdateWithoutMembersInput = {
   status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  moderationEvents?: Prisma.ModerationEventUpdateManyWithoutRoomNestedInput
   customCommands?: Prisma.CustomCommandUpdateManyWithoutRoomNestedInput
   djs?: Prisma.DjAssignmentUpdateManyWithoutRoomNestedInput
   requests?: Prisma.MusicRequestUpdateManyWithoutRoomNestedInput
@@ -631,6 +655,7 @@ export type RoomUncheckedUpdateWithoutMembersInput = {
   status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  moderationEvents?: Prisma.ModerationEventUncheckedUpdateManyWithoutRoomNestedInput
   customCommands?: Prisma.CustomCommandUncheckedUpdateManyWithoutRoomNestedInput
   djs?: Prisma.DjAssignmentUncheckedUpdateManyWithoutRoomNestedInput
   requests?: Prisma.MusicRequestUncheckedUpdateManyWithoutRoomNestedInput
@@ -647,6 +672,7 @@ export type RoomCreateWithoutDjsInput = {
   status?: $Enums.RoomStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  moderationEvents?: Prisma.ModerationEventCreateNestedManyWithoutRoomInput
   customCommands?: Prisma.CustomCommandCreateNestedManyWithoutRoomInput
   members?: Prisma.RoomMemberCreateNestedManyWithoutRoomInput
   requests?: Prisma.MusicRequestCreateNestedManyWithoutRoomInput
@@ -663,6 +689,7 @@ export type RoomUncheckedCreateWithoutDjsInput = {
   status?: $Enums.RoomStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  moderationEvents?: Prisma.ModerationEventUncheckedCreateNestedManyWithoutRoomInput
   customCommands?: Prisma.CustomCommandUncheckedCreateNestedManyWithoutRoomInput
   members?: Prisma.RoomMemberUncheckedCreateNestedManyWithoutRoomInput
   requests?: Prisma.MusicRequestUncheckedCreateNestedManyWithoutRoomInput
@@ -695,6 +722,7 @@ export type RoomUpdateWithoutDjsInput = {
   status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  moderationEvents?: Prisma.ModerationEventUpdateManyWithoutRoomNestedInput
   customCommands?: Prisma.CustomCommandUpdateManyWithoutRoomNestedInput
   members?: Prisma.RoomMemberUpdateManyWithoutRoomNestedInput
   requests?: Prisma.MusicRequestUpdateManyWithoutRoomNestedInput
@@ -711,6 +739,7 @@ export type RoomUncheckedUpdateWithoutDjsInput = {
   status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  moderationEvents?: Prisma.ModerationEventUncheckedUpdateManyWithoutRoomNestedInput
   customCommands?: Prisma.CustomCommandUncheckedUpdateManyWithoutRoomNestedInput
   members?: Prisma.RoomMemberUncheckedUpdateManyWithoutRoomNestedInput
   requests?: Prisma.MusicRequestUncheckedUpdateManyWithoutRoomNestedInput
@@ -727,6 +756,7 @@ export type RoomCreateWithoutRequestsInput = {
   status?: $Enums.RoomStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  moderationEvents?: Prisma.ModerationEventCreateNestedManyWithoutRoomInput
   customCommands?: Prisma.CustomCommandCreateNestedManyWithoutRoomInput
   members?: Prisma.RoomMemberCreateNestedManyWithoutRoomInput
   djs?: Prisma.DjAssignmentCreateNestedManyWithoutRoomInput
@@ -743,6 +773,7 @@ export type RoomUncheckedCreateWithoutRequestsInput = {
   status?: $Enums.RoomStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  moderationEvents?: Prisma.ModerationEventUncheckedCreateNestedManyWithoutRoomInput
   customCommands?: Prisma.CustomCommandUncheckedCreateNestedManyWithoutRoomInput
   members?: Prisma.RoomMemberUncheckedCreateNestedManyWithoutRoomInput
   djs?: Prisma.DjAssignmentUncheckedCreateNestedManyWithoutRoomInput
@@ -775,6 +806,7 @@ export type RoomUpdateWithoutRequestsInput = {
   status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  moderationEvents?: Prisma.ModerationEventUpdateManyWithoutRoomNestedInput
   customCommands?: Prisma.CustomCommandUpdateManyWithoutRoomNestedInput
   members?: Prisma.RoomMemberUpdateManyWithoutRoomNestedInput
   djs?: Prisma.DjAssignmentUpdateManyWithoutRoomNestedInput
@@ -791,6 +823,7 @@ export type RoomUncheckedUpdateWithoutRequestsInput = {
   status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  moderationEvents?: Prisma.ModerationEventUncheckedUpdateManyWithoutRoomNestedInput
   customCommands?: Prisma.CustomCommandUncheckedUpdateManyWithoutRoomNestedInput
   members?: Prisma.RoomMemberUncheckedUpdateManyWithoutRoomNestedInput
   djs?: Prisma.DjAssignmentUncheckedUpdateManyWithoutRoomNestedInput
@@ -807,6 +840,7 @@ export type RoomCreateWithoutQueueItemsInput = {
   status?: $Enums.RoomStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  moderationEvents?: Prisma.ModerationEventCreateNestedManyWithoutRoomInput
   customCommands?: Prisma.CustomCommandCreateNestedManyWithoutRoomInput
   members?: Prisma.RoomMemberCreateNestedManyWithoutRoomInput
   djs?: Prisma.DjAssignmentCreateNestedManyWithoutRoomInput
@@ -823,6 +857,7 @@ export type RoomUncheckedCreateWithoutQueueItemsInput = {
   status?: $Enums.RoomStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  moderationEvents?: Prisma.ModerationEventUncheckedCreateNestedManyWithoutRoomInput
   customCommands?: Prisma.CustomCommandUncheckedCreateNestedManyWithoutRoomInput
   members?: Prisma.RoomMemberUncheckedCreateNestedManyWithoutRoomInput
   djs?: Prisma.DjAssignmentUncheckedCreateNestedManyWithoutRoomInput
@@ -855,6 +890,7 @@ export type RoomUpdateWithoutQueueItemsInput = {
   status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  moderationEvents?: Prisma.ModerationEventUpdateManyWithoutRoomNestedInput
   customCommands?: Prisma.CustomCommandUpdateManyWithoutRoomNestedInput
   members?: Prisma.RoomMemberUpdateManyWithoutRoomNestedInput
   djs?: Prisma.DjAssignmentUpdateManyWithoutRoomNestedInput
@@ -871,6 +907,7 @@ export type RoomUncheckedUpdateWithoutQueueItemsInput = {
   status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  moderationEvents?: Prisma.ModerationEventUncheckedUpdateManyWithoutRoomNestedInput
   customCommands?: Prisma.CustomCommandUncheckedUpdateManyWithoutRoomNestedInput
   members?: Prisma.RoomMemberUncheckedUpdateManyWithoutRoomNestedInput
   djs?: Prisma.DjAssignmentUncheckedUpdateManyWithoutRoomNestedInput
@@ -887,6 +924,7 @@ export type RoomCreateWithoutPlaybackItemsInput = {
   status?: $Enums.RoomStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  moderationEvents?: Prisma.ModerationEventCreateNestedManyWithoutRoomInput
   customCommands?: Prisma.CustomCommandCreateNestedManyWithoutRoomInput
   members?: Prisma.RoomMemberCreateNestedManyWithoutRoomInput
   djs?: Prisma.DjAssignmentCreateNestedManyWithoutRoomInput
@@ -903,6 +941,7 @@ export type RoomUncheckedCreateWithoutPlaybackItemsInput = {
   status?: $Enums.RoomStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  moderationEvents?: Prisma.ModerationEventUncheckedCreateNestedManyWithoutRoomInput
   customCommands?: Prisma.CustomCommandUncheckedCreateNestedManyWithoutRoomInput
   members?: Prisma.RoomMemberUncheckedCreateNestedManyWithoutRoomInput
   djs?: Prisma.DjAssignmentUncheckedCreateNestedManyWithoutRoomInput
@@ -935,6 +974,7 @@ export type RoomUpdateWithoutPlaybackItemsInput = {
   status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  moderationEvents?: Prisma.ModerationEventUpdateManyWithoutRoomNestedInput
   customCommands?: Prisma.CustomCommandUpdateManyWithoutRoomNestedInput
   members?: Prisma.RoomMemberUpdateManyWithoutRoomNestedInput
   djs?: Prisma.DjAssignmentUpdateManyWithoutRoomNestedInput
@@ -951,6 +991,7 @@ export type RoomUncheckedUpdateWithoutPlaybackItemsInput = {
   status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  moderationEvents?: Prisma.ModerationEventUncheckedUpdateManyWithoutRoomNestedInput
   customCommands?: Prisma.CustomCommandUncheckedUpdateManyWithoutRoomNestedInput
   members?: Prisma.RoomMemberUncheckedUpdateManyWithoutRoomNestedInput
   djs?: Prisma.DjAssignmentUncheckedUpdateManyWithoutRoomNestedInput
@@ -967,6 +1008,7 @@ export type RoomCreateWithoutCustomCommandsInput = {
   status?: $Enums.RoomStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  moderationEvents?: Prisma.ModerationEventCreateNestedManyWithoutRoomInput
   members?: Prisma.RoomMemberCreateNestedManyWithoutRoomInput
   djs?: Prisma.DjAssignmentCreateNestedManyWithoutRoomInput
   requests?: Prisma.MusicRequestCreateNestedManyWithoutRoomInput
@@ -983,6 +1025,7 @@ export type RoomUncheckedCreateWithoutCustomCommandsInput = {
   status?: $Enums.RoomStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  moderationEvents?: Prisma.ModerationEventUncheckedCreateNestedManyWithoutRoomInput
   members?: Prisma.RoomMemberUncheckedCreateNestedManyWithoutRoomInput
   djs?: Prisma.DjAssignmentUncheckedCreateNestedManyWithoutRoomInput
   requests?: Prisma.MusicRequestUncheckedCreateNestedManyWithoutRoomInput
@@ -1015,6 +1058,7 @@ export type RoomUpdateWithoutCustomCommandsInput = {
   status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  moderationEvents?: Prisma.ModerationEventUpdateManyWithoutRoomNestedInput
   members?: Prisma.RoomMemberUpdateManyWithoutRoomNestedInput
   djs?: Prisma.DjAssignmentUpdateManyWithoutRoomNestedInput
   requests?: Prisma.MusicRequestUpdateManyWithoutRoomNestedInput
@@ -1031,6 +1075,91 @@ export type RoomUncheckedUpdateWithoutCustomCommandsInput = {
   status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  moderationEvents?: Prisma.ModerationEventUncheckedUpdateManyWithoutRoomNestedInput
+  members?: Prisma.RoomMemberUncheckedUpdateManyWithoutRoomNestedInput
+  djs?: Prisma.DjAssignmentUncheckedUpdateManyWithoutRoomNestedInput
+  requests?: Prisma.MusicRequestUncheckedUpdateManyWithoutRoomNestedInput
+  queueItems?: Prisma.QueueItemUncheckedUpdateManyWithoutRoomNestedInput
+  playbackItems?: Prisma.PlaybackHistoryUncheckedUpdateManyWithoutRoomNestedInput
+}
+
+export type RoomCreateWithoutModerationEventsInput = {
+  id?: string
+  name: string
+  imvuRoomId?: string | null
+  azuraStationId?: number | null
+  streamUrl?: string | null
+  status?: $Enums.RoomStatus
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customCommands?: Prisma.CustomCommandCreateNestedManyWithoutRoomInput
+  members?: Prisma.RoomMemberCreateNestedManyWithoutRoomInput
+  djs?: Prisma.DjAssignmentCreateNestedManyWithoutRoomInput
+  requests?: Prisma.MusicRequestCreateNestedManyWithoutRoomInput
+  queueItems?: Prisma.QueueItemCreateNestedManyWithoutRoomInput
+  playbackItems?: Prisma.PlaybackHistoryCreateNestedManyWithoutRoomInput
+}
+
+export type RoomUncheckedCreateWithoutModerationEventsInput = {
+  id?: string
+  name: string
+  imvuRoomId?: string | null
+  azuraStationId?: number | null
+  streamUrl?: string | null
+  status?: $Enums.RoomStatus
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customCommands?: Prisma.CustomCommandUncheckedCreateNestedManyWithoutRoomInput
+  members?: Prisma.RoomMemberUncheckedCreateNestedManyWithoutRoomInput
+  djs?: Prisma.DjAssignmentUncheckedCreateNestedManyWithoutRoomInput
+  requests?: Prisma.MusicRequestUncheckedCreateNestedManyWithoutRoomInput
+  queueItems?: Prisma.QueueItemUncheckedCreateNestedManyWithoutRoomInput
+  playbackItems?: Prisma.PlaybackHistoryUncheckedCreateNestedManyWithoutRoomInput
+}
+
+export type RoomCreateOrConnectWithoutModerationEventsInput = {
+  where: Prisma.RoomWhereUniqueInput
+  create: Prisma.XOR<Prisma.RoomCreateWithoutModerationEventsInput, Prisma.RoomUncheckedCreateWithoutModerationEventsInput>
+}
+
+export type RoomUpsertWithoutModerationEventsInput = {
+  update: Prisma.XOR<Prisma.RoomUpdateWithoutModerationEventsInput, Prisma.RoomUncheckedUpdateWithoutModerationEventsInput>
+  create: Prisma.XOR<Prisma.RoomCreateWithoutModerationEventsInput, Prisma.RoomUncheckedCreateWithoutModerationEventsInput>
+  where?: Prisma.RoomWhereInput
+}
+
+export type RoomUpdateToOneWithWhereWithoutModerationEventsInput = {
+  where?: Prisma.RoomWhereInput
+  data: Prisma.XOR<Prisma.RoomUpdateWithoutModerationEventsInput, Prisma.RoomUncheckedUpdateWithoutModerationEventsInput>
+}
+
+export type RoomUpdateWithoutModerationEventsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  imvuRoomId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  azuraStationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  streamUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customCommands?: Prisma.CustomCommandUpdateManyWithoutRoomNestedInput
+  members?: Prisma.RoomMemberUpdateManyWithoutRoomNestedInput
+  djs?: Prisma.DjAssignmentUpdateManyWithoutRoomNestedInput
+  requests?: Prisma.MusicRequestUpdateManyWithoutRoomNestedInput
+  queueItems?: Prisma.QueueItemUpdateManyWithoutRoomNestedInput
+  playbackItems?: Prisma.PlaybackHistoryUpdateManyWithoutRoomNestedInput
+}
+
+export type RoomUncheckedUpdateWithoutModerationEventsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  imvuRoomId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  azuraStationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  streamUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumRoomStatusFieldUpdateOperationsInput | $Enums.RoomStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customCommands?: Prisma.CustomCommandUncheckedUpdateManyWithoutRoomNestedInput
   members?: Prisma.RoomMemberUncheckedUpdateManyWithoutRoomNestedInput
   djs?: Prisma.DjAssignmentUncheckedUpdateManyWithoutRoomNestedInput
   requests?: Prisma.MusicRequestUncheckedUpdateManyWithoutRoomNestedInput
@@ -1044,6 +1173,7 @@ export type RoomUncheckedUpdateWithoutCustomCommandsInput = {
  */
 
 export type RoomCountOutputType = {
+  moderationEvents: number
   customCommands: number
   members: number
   djs: number
@@ -1053,6 +1183,7 @@ export type RoomCountOutputType = {
 }
 
 export type RoomCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  moderationEvents?: boolean | RoomCountOutputTypeCountModerationEventsArgs
   customCommands?: boolean | RoomCountOutputTypeCountCustomCommandsArgs
   members?: boolean | RoomCountOutputTypeCountMembersArgs
   djs?: boolean | RoomCountOutputTypeCountDjsArgs
@@ -1069,6 +1200,13 @@ export type RoomCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensi
    * Select specific fields to fetch from the RoomCountOutputType
    */
   select?: Prisma.RoomCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * RoomCountOutputType without action
+ */
+export type RoomCountOutputTypeCountModerationEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ModerationEventWhereInput
 }
 
 /**
@@ -1123,6 +1261,7 @@ export type RoomSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   status?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  moderationEvents?: boolean | Prisma.Room$moderationEventsArgs<ExtArgs>
   customCommands?: boolean | Prisma.Room$customCommandsArgs<ExtArgs>
   members?: boolean | Prisma.Room$membersArgs<ExtArgs>
   djs?: boolean | Prisma.Room$djsArgs<ExtArgs>
@@ -1167,6 +1306,7 @@ export type RoomSelectScalar = {
 
 export type RoomOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "imvuRoomId" | "azuraStationId" | "streamUrl" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["room"]>
 export type RoomInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  moderationEvents?: boolean | Prisma.Room$moderationEventsArgs<ExtArgs>
   customCommands?: boolean | Prisma.Room$customCommandsArgs<ExtArgs>
   members?: boolean | Prisma.Room$membersArgs<ExtArgs>
   djs?: boolean | Prisma.Room$djsArgs<ExtArgs>
@@ -1181,6 +1321,7 @@ export type RoomIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type $RoomPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Room"
   objects: {
+    moderationEvents: Prisma.$ModerationEventPayload<ExtArgs>[]
     customCommands: Prisma.$CustomCommandPayload<ExtArgs>[]
     members: Prisma.$RoomMemberPayload<ExtArgs>[]
     djs: Prisma.$DjAssignmentPayload<ExtArgs>[]
@@ -1591,6 +1732,7 @@ readonly fields: RoomFieldRefs;
  */
 export interface Prisma__RoomClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  moderationEvents<T extends Prisma.Room$moderationEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Room$moderationEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ModerationEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   customCommands<T extends Prisma.Room$customCommandsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Room$customCommandsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CustomCommandPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   members<T extends Prisma.Room$membersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Room$membersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RoomMemberPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   djs<T extends Prisma.Room$djsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Room$djsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DjAssignmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2024,6 +2166,30 @@ export type RoomDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Limit how many Rooms to delete.
    */
   limit?: number
+}
+
+/**
+ * Room.moderationEvents
+ */
+export type Room$moderationEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ModerationEvent
+   */
+  select?: Prisma.ModerationEventSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ModerationEvent
+   */
+  omit?: Prisma.ModerationEventOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ModerationEventInclude<ExtArgs> | null
+  where?: Prisma.ModerationEventWhereInput
+  orderBy?: Prisma.ModerationEventOrderByWithRelationInput | Prisma.ModerationEventOrderByWithRelationInput[]
+  cursor?: Prisma.ModerationEventWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ModerationEventScalarFieldEnum | Prisma.ModerationEventScalarFieldEnum[]
 }
 
 /**

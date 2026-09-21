@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+import {readFile} from 'node:fs/promises';
+import Fastify from 'fastify';
+import {prisma} from '@roomwave/database';
+import {moderationRoutes,purgeModeration} from '../src/routes/moderation.ts';
+const original=globalThis.fetch,cid=String(Date.now()),roomIds:string[]=[],userIds:string[]=[];
+let active:string|undefined;const app=Fastify();await app.register(moderationRoutes,{activeRoom:()=>active});
+try{
+ const owner=await prisma.user.create({data:{imvuUserId:cid,username:'Moderation fixture'}});userIds.push(owner.id);
+ const room=await prisma.room.create({data:{name:'Moderation fixture',imvuRoomId:cid+'-1',members:{create:{userId:owner.id,role:'OWNER'}}}});roomIds.push(room.id);active=room.id;
+ globalThis.fetch=async(input)=>{const url=String(input);return Response.json({status:'success',denormalized:{[url]:url.endsWith('/moderators')?{data:{items:[url+'/user-22']},relations:{}}:{data:{customers_id:cid,customers_room_id:1,name:'Moderation fixture'}}}});};
+ const key=(await readFile('.data/custom-commands.key','utf8')).trim();
+ const call=(body:any,auth=true)=>app.inject({method:'POST',url:'/moderation',headers:auth?{'x-roomwave-bot-key':key}:{},payload:{roomId:room.id,...body}});
+ const start=(extras:any={})=>({operation:'start',id:randomUUID(),actorCid:cid,actorName:'Owner',targetCid:'44',targetName:'Visitor',reason:'Test',action:'WARN',...extras});
+ assert.equal((await call({operation:'list',actorCid:cid},false)).statusCode,401);
+ assert.equal((await call({operation:'list',actorCid:'55'})).statusCode,400);
+ assert.equal((await call(start({actorCid:'55'}))).json().error,'MODERATION_DENIED');
+ assert.equal((await call(start({targetCid:'22'}))).json().error,'MODERATION_PROTECTED');
+ active=undefined;assert.equal((await call(start())).statusCode,409);active=room.id;
+ const payload=start();assert.equal((await call(payload)).statusCode,200);
+ assert.equal((await call(start())).statusCode,429);
+ assert.equal((await call({operation:'finish',id:payload.id,status:'CONFIRMED',resultCode:'ECHO_TIMEOUT'})).statusCode,400);
+ assert.equal((await call({operation:'finish',id:payload.id,status:'CONFIRMED',resultCode:'CHAT_ECHO'})).json().updated,1);
+ assert.equal((await call({operation:'finish',id:payload.id,status:'FAILED',resultCode:'SEND_FAILED'})).json().updated,0);
+ const list=await call({operation:'list',actorCid:cid,person:'Visitor',action:'WARN'});assert.equal(list.statusCode,200,list.body);assert.equal(list.json().events.length,1);assert.equal(list.json().events[0].status,'CONFIRMED');
+ assert.equal((await call({operation:'list',actorCid:cid,person:'Nobody'})).json().events.length,0);
+ assert.equal((await call({operation:'list',actorCid:cid,from:'2026-01-02T00:00:00Z',to:'2026-01-01T00:00:00Z'})).statusCode,400);
+ const pending=await prisma.moderationEvent.create({data:{...payload,id:randomUUID(),operation:undefined,roomId:room.id,createdAt:new Date(Date.now()-120000)} as any});
+ const old=await prisma.moderationEvent.create({data:{...payload,id:randomUUID(),operation:undefined,roomId:room.id,createdAt:new Date(Date.now()-31*86400000)} as any});
+ await purgeModeration();assert.equal((await prisma.moderationEvent.findUnique({where:{id:pending.id}}))?.status,'UNCONFIRMED');assert.equal(await prisma.moderationEvent.findUnique({where:{id:old.id}}),null);
+ console.log('Moderation integration: auth, real roles, active room, cooldown, transitions, filters and retention OK');
+}finally{globalThis.fetch=original;await app.close();for(const id of roomIds)await prisma.room.delete({where:{id}});for(const id of userIds)await prisma.user.delete({where:{id}});await prisma.$disconnect();}

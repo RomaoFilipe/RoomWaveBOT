@@ -405,7 +405,8 @@ export const ModelName = {
   MusicRequest: 'MusicRequest',
   QueueItem: 'QueueItem',
   PlaybackHistory: 'PlaybackHistory',
-  CustomCommand: 'CustomCommand'
+  CustomCommand: 'CustomCommand',
+  ModerationEvent: 'ModerationEvent'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -421,7 +422,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "room" | "roomMember" | "djAssignment" | "track" | "musicRequest" | "queueItem" | "playbackHistory" | "customCommand"
+    modelProps: "user" | "room" | "roomMember" | "djAssignment" | "track" | "musicRequest" | "queueItem" | "playbackHistory" | "customCommand" | "moderationEvent"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1091,6 +1092,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ModerationEvent: {
+      payload: Prisma.$ModerationEventPayload<ExtArgs>
+      fields: Prisma.ModerationEventFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ModerationEventFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModerationEventPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ModerationEventFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModerationEventPayload>
+        }
+        findFirst: {
+          args: Prisma.ModerationEventFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModerationEventPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ModerationEventFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModerationEventPayload>
+        }
+        findMany: {
+          args: Prisma.ModerationEventFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModerationEventPayload>[]
+        }
+        create: {
+          args: Prisma.ModerationEventCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModerationEventPayload>
+        }
+        createMany: {
+          args: Prisma.ModerationEventCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ModerationEventCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModerationEventPayload>[]
+        }
+        delete: {
+          args: Prisma.ModerationEventDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModerationEventPayload>
+        }
+        update: {
+          args: Prisma.ModerationEventUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModerationEventPayload>
+        }
+        deleteMany: {
+          args: Prisma.ModerationEventDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ModerationEventUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ModerationEventUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModerationEventPayload>[]
+        }
+        upsert: {
+          args: Prisma.ModerationEventUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ModerationEventPayload>
+        }
+        aggregate: {
+          args: Prisma.ModerationEventAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateModerationEvent>
+        }
+        groupBy: {
+          args: Prisma.ModerationEventGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ModerationEventGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ModerationEventCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ModerationEventCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1246,6 +1321,24 @@ export const CustomCommandScalarFieldEnum = {
 export type CustomCommandScalarFieldEnum = (typeof CustomCommandScalarFieldEnum)[keyof typeof CustomCommandScalarFieldEnum]
 
 
+export const ModerationEventScalarFieldEnum = {
+  id: 'id',
+  roomId: 'roomId',
+  actorCid: 'actorCid',
+  actorName: 'actorName',
+  targetCid: 'targetCid',
+  targetName: 'targetName',
+  reason: 'reason',
+  action: 'action',
+  status: 'status',
+  resultCode: 'resultCode',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ModerationEventScalarFieldEnum = (typeof ModerationEventScalarFieldEnum)[keyof typeof ModerationEventScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1385,6 +1478,34 @@ export type EnumQueueStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Pris
  * Reference to a field of type 'QueueStatus[]'
  */
 export type ListEnumQueueStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueueStatus[]'>
+
+
+
+/**
+ * Reference to a field of type 'ModerationAction'
+ */
+export type EnumModerationActionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ModerationAction'>
+
+
+
+/**
+ * Reference to a field of type 'ModerationAction[]'
+ */
+export type ListEnumModerationActionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ModerationAction[]'>
+
+
+
+/**
+ * Reference to a field of type 'ModerationStatus'
+ */
+export type EnumModerationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ModerationStatus'>
+
+
+
+/**
+ * Reference to a field of type 'ModerationStatus[]'
+ */
+export type ListEnumModerationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ModerationStatus[]'>
     
 
 
@@ -1561,6 +1682,7 @@ export type GlobalOmitConfig = {
   queueItem?: Prisma.QueueItemOmit
   playbackHistory?: Prisma.PlaybackHistoryOmit
   customCommand?: Prisma.CustomCommandOmit
+  moderationEvent?: Prisma.ModerationEventOmit
 }
 
 /* Types for Logging */

@@ -1,3 +1,4 @@
+import {installModeration,observeModerationEcho,runModeration} from "./moderation.js";
 import {setPresenceReader} from "./presence.js";
 import {captureActivity,publicChat} from "./activity.js";
 import { startWelcomes } from "./welcome.js";
@@ -194,6 +195,8 @@ await page.exposeFunction(
 
     if (activityReady && message.isPublic === true && /^\d{1,20}$/.test(message.userId)) void captureActivity({type:'message',userId:message.userId,text:text.slice(0,1000)});
 
+    observeModerationEcho(text, message.userId, message.isPublic === true);
+
     /*
      * Ignorar mensagens enviadas
      * pelo próprio RoomWaveBot.
@@ -230,6 +233,11 @@ await page.exposeFunction(
       );
 
       return "🏓 Pong!";
+    }
+
+    const moderationMatch = /^!(expulsar|avisar)(?:\s+([\s\S]*))?$/i.exec(text);
+    if (moderationMatch) {
+      return runModeration(moderationMatch[1]!.toLowerCase(), moderationMatch[2] ?? '', {id:message.userId,name:message.userId}, message.isPublic === true);
     }
 
     const identity =
@@ -1138,6 +1146,7 @@ setPresenceReader(async (id) => {
     return items.includes(`${url}/user-${id}`);
   }finally{await response.dispose();}
 });
+const stopModeration = installModeration(context, page);
 activityReady = true;
 const stopWelcomes = startWelcomes(context, page);
 
@@ -1149,6 +1158,7 @@ async function stop() {
   stopping = true;
   clearInterval(roomHeartbeat);
   stopWelcomes();
+  stopModeration();
   activityReady = false;
   setPresenceReader(null);
   reportBotRoom("offline");

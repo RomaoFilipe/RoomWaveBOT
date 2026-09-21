@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@roomwave/database";
 
 export const reservedNames = new Set([
+  "expulsar", "avisar",
   "abraco", "abraço", "ship", "8ball", "dado", "moeda", "duelo", "aceitar", "recusar", "quiz", "responder", "top", "votar", "voto", "resultado", "dedicar",
   "onde", "historico", "ping", "help", "comandos", "regras", "radio", "staff", "add", "queue", "now",
   "volume", "skip", "remove", "clear", "disconnect", "pause", "resume", "stop",

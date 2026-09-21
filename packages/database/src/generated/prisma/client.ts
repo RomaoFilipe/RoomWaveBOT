@@ -86,3 +86,8 @@ export type PlaybackHistory = Prisma.PlaybackHistoryModel
  * 
  */
 export type CustomCommand = Prisma.CustomCommandModel
+/**
+ * Model ModerationEvent
+ *
+ */
+export type ModerationEvent = Prisma.ModerationEventModel

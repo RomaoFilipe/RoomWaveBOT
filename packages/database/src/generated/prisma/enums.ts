@@ -58,3 +58,21 @@ export const QueueStatus = {
 } as const
 
 export type QueueStatus = (typeof QueueStatus)[keyof typeof QueueStatus]
+
+
+export const ModerationAction = {
+  WARN: 'WARN',
+  KICK: 'KICK'
+} as const
+
+export type ModerationAction = (typeof ModerationAction)[keyof typeof ModerationAction]
+
+
+export const ModerationStatus = {
+  REQUESTED: 'REQUESTED',
+  CONFIRMED: 'CONFIRMED',
+  FAILED: 'FAILED',
+  UNCONFIRMED: 'UNCONFIRMED'
+} as const
+
+export type ModerationStatus = (typeof ModerationStatus)[keyof typeof ModerationStatus]

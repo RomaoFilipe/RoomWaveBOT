@@ -96,6 +96,10 @@ const server=createServer(async(req,res)=>{
     if(!token||!sessions.has(token)||sessions.get(token)<Date.now())return json(res,401,{error:'LOGIN_REQUIRED'});
     if(req.method==='POST'&&path==='/dashboard/api/logout'){sessions.delete(token);res.setHeader('Set-Cookie','rw_session=; Path=/dashboard; HttpOnly; Secure; SameSite=Strict; Max-Age=0');return json(res,200,{ok:true});}
     const actor=await owner(); // Recheck OWNER before every privileged request.
+    if(req.method==='POST'&&path==='/dashboard/api/moderation'){
+      const input=await body(req);
+      return json(res,200,await request(api,'/api/moderation',{operation:'list',actorCid:actor.imvuUserId,roomId:input.roomId,person:input.person,action:input.action,from:input.from,to:input.to,cursor:input.cursor}));
+    }
     if(req.method==='POST'&&path==='/dashboard/api/security'){
       const input=await body(req);
       if(!['rooms','register','monitor','view','watch','unwatch'].includes(input.action))return json(res,400,{error:'INVALID_ACTION'});

@@ -1,3 +1,4 @@
+import {moderationRoutes} from "./routes/moderation.js";
 import {securityRoutes} from "./routes/security.js";
 import {roomActivityRoutes} from "./routes/room-activity.js";
 import { imvuDirectoryRoutes } from "./routes/imvu-directory.js";
@@ -68,6 +69,7 @@ await app.register(imvuDirectoryRoutes, { prefix: "/api" });
 await app.register(roomActivityRoutes, { prefix: "/api" });
 
 await app.register(securityRoutes, { prefix: "/api" });
+await app.register(moderationRoutes, { prefix: "/api" });
 
 const port = Number(process.env.API_PORT ?? 3001);
 const host = process.env.API_HOST ?? "0.0.0.0";

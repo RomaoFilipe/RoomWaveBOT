@@ -168,6 +168,7 @@ async function loadSecurityView(reset=false){
   const participants=$('security-participants');participants.replaceChildren();for(const p of data.snapshot?.participants||[]){const watched=data.people.some(person=>person.id===p.id);participants.append(element('p',p.name+' · CID '+p.id+(watched?' · Destacado':''),watched?'security-highlight':''));}
   const people=$('security-people');people.replaceChildren();for(const p of data.people){const row=element('div',undefined,'activity-row');row.append(element('strong',p.username+' · '+p.id),element('p',p.note));const button=element('button','Remover destaque','text-button');button.onclick=async()=>{try{await securityApi({action:'unwatch',roomId,query:p.id});await loadSecurityView();}catch(e){notice(e.message,true);}};row.append(button);people.append(row);}if(!data.people.length)people.append(element('p','Ainda não há pessoas destacadas.','muted'));
   renderSecurityEvents();
+  if(reset)void loadModeration();
  }catch(e){$('security-detail').hidden=true;notice(e.message,true);}finally{securityViewing=false;}
 }
 function renderSecurityEvents(){
@@ -180,3 +181,19 @@ $('security-refresh').onclick=loadSecurityRooms;
 $('security-room-form').onsubmit=async event=>{event.preventDefault();const button=event.target.querySelector('button');button.disabled=true;try{const data=await securityApi({action:'register',query:event.target.elements.query.value.trim()});await loadSecurityRooms();$('security-room').value=data.room.id;await loadSecurityView(true);event.target.reset();notice('Propriedade confirmada. Sala guardada.');}catch(e){notice(e.message,true);}finally{button.disabled=false;}};
 $('security-monitor').onsubmit=async event=>{event.preventDefault();const roomId=securitySelected;if(!roomId)return;const button=event.target.querySelector('button');button.disabled=true;try{await securityApi({action:'monitor',roomId,enabled:event.target.elements.enabled.checked});await loadSecurityView(true);notice('Configuração de segurança guardada.');}catch(e){notice(e.message,true);}finally{button.disabled=false;}};
 $('security-person-form').onsubmit=async event=>{event.preventDefault();const roomId=securitySelected;if(!roomId)return;const button=event.target.querySelector('button');button.disabled=true;try{await securityApi({action:'watch',roomId,query:event.target.elements.query.value.trim(),note:event.target.elements.note.value.trim()});event.target.reset();await loadSecurityView();notice('Pessoa guardada nesta sala.');}catch(e){notice(e.message,true);}finally{button.disabled=false;}};
+
+let moderationCursor=null,moderationLoading=false;
+async function loadModeration(more=false){
+ if(moderationLoading||!securitySelected)return;moderationLoading=true;
+ const roomId=securitySelected,form=$('moderation-filters').elements,box=$('moderation-events');
+ if(!more){moderationCursor=null;box.replaceChildren();$('moderation-more').hidden=true;}
+ try{
+  const data=await api('moderation',{roomId,person:form.person.value.trim()||undefined,action:form.action.value||undefined,from:form.from.value?form.from.value+'T00:00:00.000Z':undefined,to:form.to.value?form.to.value+'T23:59:59.999Z':undefined,cursor:more?moderationCursor:undefined});
+  if(roomId!==securitySelected)return;
+  for(const e of data.events){const row=element('div',undefined,'activity-row');row.append(element('small',new Date(e.createdAt).toLocaleString('pt-PT')+' · '+(e.action==='WARN'?'Aviso':'Expulsão')+' · '+({REQUESTED:'Pedido',CONFIRMED:'Confirmado',FAILED:'Falhou',UNCONFIRMED:'Não confirmado'}[e.status]||e.status)),element('strong',e.actorName+' ('+e.actorCid+') → '+e.targetName+' ('+e.targetCid+')'),element('p',e.reason));if(e.resultCode)row.append(element('small',({CHAT_ECHO:'Publicação confirmada pelo eco do chat',SEND_FAILED:'Falha de envio',ECHO_TIMEOUT:'Sem confirmação do chat',ROOM_CHANGED:'Sala alterada',KICK_UNAVAILABLE:'Expulsão nativa indisponível',INTERRUPTED:'Operação interrompida ou sem resultado'}[e.resultCode]||'Resultado indisponível')));box.append(row);}
+  if(!more&&!data.events.length)box.append(element('p','Sem ações para estes filtros.','muted'));
+  moderationCursor=data.nextCursor;$('moderation-more').hidden=!moderationCursor;
+ }catch(e){if(roomId===securitySelected)box.append(element('p','Não foi possível consultar o histórico.','muted'));}finally{moderationLoading=false;}
+}
+$('moderation-filters').onsubmit=e=>{e.preventDefault();void loadModeration();};
+$('moderation-more').onclick=()=>loadModeration(true);
